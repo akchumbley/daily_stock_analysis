@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- 新条目格式：- [类型] 描述（类型取值：新功能/改进/修复/文档/测试/chore）-->
 <!-- 每条独立一行追加到本段末尾，无需分类标题，合并时冲突最小 -->
+- [修复] Styled HTML emails now emphasize risk alerts emitted in the production bold-label format.
 - [改进] 自定义 Webhook 模板新增 `$content_html_json` / `$content_html` 占位符，Resend 等 HTML 邮件端点可发送带卡片、表格、风险强调和移动端适配的图形化报告，同时保留纯文本 fallback。
 - [修复] 英文报告的通知标题、成交量、财务金额、每股分红与机构持股单位不再混用中文，统一按英文标题及 `K/M/B`、ISO 币种格式输出。
 - [修复] 已配置钉钉 Webhook 时不再误报“未配置通知渠道”；钉钉 Stream 仍仅用于交互，不作为定时静态推送渠道。

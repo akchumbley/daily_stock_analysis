@@ -39,6 +39,13 @@ class TestMarkdownEmailDocument(unittest.TestCase):
         self.assertIn("linear-gradient", html)
         self.assertIn("<table>", html)
 
+    def test_report_html_emphasizes_production_risk_label_format(self):
+        html = markdown_to_html_document(
+            "# Dashboard\n\n**🚨 Risk Alerts**:\n- Keep position size controlled."
+        )
+
+        self.assertIn('<p class="risk-heading"><strong>🚨 Risk Alerts</strong></p>', html)
+
 
 class TestChunkContentByMaxWords(unittest.TestCase):
     """Tests for chunk_content_by_max_words."""

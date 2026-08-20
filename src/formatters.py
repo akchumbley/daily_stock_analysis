@@ -124,6 +124,12 @@ def markdown_to_html_document(markdown_text: str) -> str:
         html_content,
         flags=re.IGNORECASE,
     )
+    html_content = re.sub(
+        r"<p><strong>(\s*🚨\s*(?:Risk Alerts|风险提示)\s*)</strong>\s*:?</p>",
+        r'<p class="risk-heading"><strong>\1</strong></p>',
+        html_content,
+        flags=re.IGNORECASE,
+    )
 
     css_style = """
             * { box-sizing: border-box; }
@@ -173,7 +179,7 @@ def markdown_to_html_document(markdown_text: str) -> str:
                 margin-top: 20px;
                 margin-bottom: 8px;
             }
-            h3.risk-heading {
+            .risk-heading {
                 color: #991b1b;
                 background: #fff1f2;
                 border-left: 4px solid #ef4444;
