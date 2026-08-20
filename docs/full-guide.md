@@ -1124,13 +1124,13 @@ EMAIL_GROUP_2=user2@example.com
 
 设置 `CUSTOM_WEBHOOK_URLS`，多个用逗号分隔。
 
-如需适配 AstrBot、NapCat 或自建服务的特殊 body，可设置 `CUSTOM_WEBHOOK_BODY_TEMPLATE`。这是全局模板，会先于 Bark、Slack、Discord 等 URL 自动识别 payload 生效；如果渲染后不是 JSON object，系统会回退默认 payload。推荐使用 `$content_json` / `$title_json` 避免换行和引号破坏 JSON：
+如需适配 AstrBot、NapCat、Resend 或自建服务的特殊 body，可设置 `CUSTOM_WEBHOOK_BODY_TEMPLATE`。这是全局模板，会先于 Bark、Slack、Discord 等 URL 自动识别 payload 生效；如果渲染后不是 JSON object，系统会回退默认 payload。推荐使用 `$content_json` / `$title_json` 避免换行和引号破坏 JSON；HTML 邮件端点可使用 `$content_html_json`，并保留 `$content_json` 作为纯文本 fallback：
 
 ```env
 CUSTOM_WEBHOOK_BODY_TEMPLATE={"msg_type":"text","content":$content_json}
 ```
 
-可用占位符：`$content_json`、`$content`、`$title_json`、`$title`。其中 `$content` / `$title` 是裸字符串，不做 JSON 转义；正文含双引号或换行时可能触发 fallback。
+可用占位符：`$content_json`、`$content_html_json`、`$content`、`$content_html`、`$title_json`、`$title`。其中 `$content` / `$content_html` / `$title` 是裸字符串，不做 JSON 转义；正文含双引号或换行时可能触发 fallback。
 
 Docker Compose 部署中，通过 Web 设置页保存时会把这些应用占位符写成 `$$content_json` / `$$title_json` 等形式，避免 Compose 重新部署时将其展开为空；应用运行时会还原为单个 `$`。如果手动编辑 Docker 使用的 `.env`，请同样使用 `$$content_json` 这类写法。
 

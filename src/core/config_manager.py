@@ -20,14 +20,14 @@ _FALLBACK_REWRITE_ERRNOS = {errno.EBUSY, errno.EXDEV}
 _COMPOSE_ESCAPED_ENV_VALUE_KEYS = frozenset({"CUSTOM_WEBHOOK_BODY_TEMPLATE"})
 _APPLICATION_TEMPLATE_PLACEHOLDER_PATTERN = re.compile(
     r"(?<!\$)\$(?:"
-    r"\{(content_json|title_json|content|title)\}"
-    r"|(content_json|title_json|content|title)\b"
+    r"\{(content_html_json|content_html|content_json|title_json|content|title)\}"
+    r"|(content_html_json|content_html|content_json|title_json|content|title)\b"
     r")"
 )
 _ESCAPED_APPLICATION_TEMPLATE_PLACEHOLDER_PATTERN = re.compile(
     r"\$\$(?:"
-    r"\{(content_json|title_json|content|title)\}"
-    r"|(content_json|title_json|content|title)\b"
+    r"\{(content_html_json|content_html|content_json|title_json|content|title)\}"
+    r"|(content_html_json|content_html|content_json|title_json|content|title)\b"
     r")"
 )
 

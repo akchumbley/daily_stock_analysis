@@ -118,91 +118,130 @@ def markdown_to_html_document(markdown_text: str) -> str:
         markdown_text,
         extras=["tables", "fenced-code-blocks", "break-on-newline", "cuddled-lists"],
     )
+    html_content = re.sub(
+        r"<h3>(\s*🚨\s*(?:Risk Alerts|风险提示).*?)</h3>",
+        r'<h3 class="risk-heading">\1</h3>',
+        html_content,
+        flags=re.IGNORECASE,
+    )
 
     css_style = """
+            * { box-sizing: border-box; }
             body {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-                line-height: 1.5;
-                color: #24292e;
+                line-height: 1.58;
+                color: #1e293b;
                 font-size: 14px;
-                padding: 15px;
-                max-width: 900px;
+                padding: 24px 12px;
+                background: #eef2f7;
                 margin: 0 auto;
             }
+            .report-shell {
+                max-width: 860px;
+                margin: 0 auto;
+                padding: 28px 34px 34px;
+                background: #ffffff;
+                border: 1px solid #dbe4ef;
+                border-radius: 16px;
+                box-shadow: 0 10px 30px rgba(15, 23, 42, 0.09);
+            }
             h1 {
-                font-size: 20px;
-                border-bottom: 1px solid #eaecef;
-                padding-bottom: 0.3em;
-                margin-top: 1.2em;
-                margin-bottom: 0.8em;
-                color: #0366d6;
+                font-size: 25px;
+                line-height: 1.25;
+                border: 0;
+                padding: 22px 24px;
+                margin: 0 0 22px;
+                color: #ffffff;
+                background: #0f3d69;
+                background: linear-gradient(135deg, #0f3d69 0%, #2563eb 100%);
+                border-radius: 13px;
             }
             h2 {
-                font-size: 18px;
-                border-bottom: 1px solid #eaecef;
-                padding-bottom: 0.3em;
-                margin-top: 1.0em;
-                margin-bottom: 0.6em;
+                font-size: 19px;
+                color: #0f3d69;
+                background: #eff6ff;
+                border-left: 5px solid #3b82f6;
+                border-bottom: 1px solid #bfdbfe;
+                padding: 11px 14px;
+                margin-top: 26px;
+                margin-bottom: 14px;
+                border-radius: 7px;
             }
             h3 {
                 font-size: 16px;
-                margin-top: 0.8em;
-                margin-bottom: 0.4em;
+                color: #334155;
+                margin-top: 20px;
+                margin-bottom: 8px;
+            }
+            h3.risk-heading {
+                color: #991b1b;
+                background: #fff1f2;
+                border-left: 4px solid #ef4444;
+                padding: 9px 12px;
+                border-radius: 6px;
             }
             p {
                 margin-top: 0;
-                margin-bottom: 8px;
+                margin-bottom: 10px;
             }
             table {
                 border-collapse: collapse;
                 width: 100%;
-                margin: 12px 0;
+                margin: 14px 0 18px;
                 display: block;
                 overflow-x: auto;
                 font-size: 13px;
+                border: 1px solid #dbe4ef;
+                border-radius: 8px;
             }
             th, td {
-                border: 1px solid #dfe2e5;
-                padding: 6px 10px;
+                border: 1px solid #dbe4ef;
+                padding: 8px 10px;
                 text-align: left;
             }
             th {
-                background-color: #f6f8fa;
-                font-weight: 600;
+                background-color: #e8f0fa;
+                color: #0f3d69;
+                font-weight: 700;
             }
             tr:nth-child(2n) {
-                background-color: #f8f8f8;
+                background-color: #f8fafc;
             }
             tr:hover {
-                background-color: #f1f8ff;
+                background-color: #eff6ff;
             }
             blockquote {
-                color: #6a737d;
-                border-left: 0.25em solid #dfe2e5;
-                padding: 0 1em;
-                margin: 0 0 10px 0;
+                color: #713f12;
+                background: #fffbeb;
+                border-left: 4px solid #f59e0b;
+                padding: 10px 14px;
+                margin: 12px 0 16px;
+                border-radius: 6px;
             }
+            a { color: #2563eb; text-decoration: none; }
+            strong { color: #0f172a; }
             code {
                 padding: 0.2em 0.4em;
                 margin: 0;
                 font-size: 85%;
-                background-color: rgba(27,31,35,0.05);
-                border-radius: 3px;
+                background-color: #eef2f7;
+                border-radius: 4px;
                 font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
             }
             pre {
                 padding: 12px;
                 overflow: auto;
                 line-height: 1.45;
-                background-color: #f6f8fa;
-                border-radius: 3px;
+                background-color: #0f172a;
+                color: #e2e8f0;
+                border-radius: 8px;
                 margin-bottom: 10px;
             }
             hr {
                 height: 0.25em;
                 padding: 0;
                 margin: 16px 0;
-                background-color: #e1e4e8;
+                background-color: #dbe4ef;
                 border: 0;
             }
             ul, ol {
@@ -211,6 +250,21 @@ def markdown_to_html_document(markdown_text: str) -> str:
             }
             li {
                 margin: 2px 0;
+            }
+            .report-footer {
+                margin-top: 28px;
+                padding-top: 14px;
+                border-top: 1px solid #e2e8f0;
+                color: #64748b;
+                font-size: 12px;
+                text-align: center;
+            }
+            @media only screen and (max-width: 640px) {
+                body { padding: 8px 4px; }
+                .report-shell { padding: 14px 12px 22px; border-radius: 8px; }
+                h1 { font-size: 21px; padding: 18px 16px; }
+                h2 { font-size: 17px; }
+                th, td { padding: 6px 7px; }
             }
         """
 
@@ -224,7 +278,10 @@ def markdown_to_html_document(markdown_text: str) -> str:
             </style>
         </head>
         <body>
-            {html_content}
+            <div class="report-shell">
+                {html_content}
+                <div class="report-footer">Daily Stock Analysis · AI-assisted market report</div>
+            </div>
         </body>
         </html>
         """

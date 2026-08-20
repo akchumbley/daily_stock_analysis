@@ -156,8 +156,9 @@ Web 设置页的“通知渠道”分类提供单渠道测试入口。测试会�
 可用占位符：
 
 - `$content_json`：JSON 转义后的通知正文，推荐默认使用。
+- `$content_html_json`：JSON 转义后的完整 HTML 报告，供 Resend 等支持 HTML 的邮件 API 使用；包含卡片布局、表格和风险提示样式。
 - `$title_json`：JSON 转义后的通知标题，推荐默认使用。
-- `$content` / `$title`：原始字符串，不做 JSON 转义。正文含双引号、反斜杠或换行时可能导致 JSON 无效并触发 fallback。
+- `$content_html` / `$content` / `$title`：原始字符串，不做 JSON 转义。正文含双引号、反斜杠或换行时可能导致 JSON 无效并触发 fallback。
 
 Docker Compose 部署中，Web 设置页保存该模板到 `.env` 时会自动把应用占位符写成 `$$content_json`、`$$title_json`、`$$content`、`$$title`，避免 Compose 将其当作宿主环境变量展开为空；应用运行时会还原为单个 `$` 占位符。若手工编辑 Docker 使用的 `.env`，也请按 `$$content_json` 形式保存。
 
@@ -167,6 +168,12 @@ Docker Compose 部署中，Web 设置页保存该模板到 `.env` 时会自动�
 
 ```env
 CUSTOM_WEBHOOK_BODY_TEMPLATE={"title":$title_json,"content":$content_json}
+```
+
+Resend HTML 邮件示例（同时保留纯文本 fallback）：
+
+```env
+CUSTOM_WEBHOOK_BODY_TEMPLATE={"from":"Daily Stock Analysis <sender@example.com>","to":["recipient@example.com"],"subject":$title_json,"html":$content_html_json,"text":$content_json}
 ```
 
 Bark 通过 custom webhook 使用时，直接把 Bark endpoint 放入 `CUSTOM_WEBHOOK_URLS`，不需要额外 `BARK_*` 配置。未配置全局模板时，系统会按 `api.day.app` 自动生成 `title` / `body` / `group`；如果配置全局模板，需要自己写出 Bark body：

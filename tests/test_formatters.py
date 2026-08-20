@@ -16,6 +16,7 @@ from src.formatters import (
     format_slack_mrkdwn,
     format_telegram_markdown,
     format_wechat_markdown,
+    markdown_to_html_document,
     markdown_tables_to_key_value_rows,
     slice_at_max_bytes,
     TRUNCATION_SUFFIX,
@@ -25,6 +26,18 @@ from src.formatters import (
     _chunk_by_max_words,
     utf16_len,
 )
+
+
+class TestMarkdownEmailDocument(unittest.TestCase):
+    def test_report_html_has_card_layout_and_risk_emphasis(self):
+        html = markdown_to_html_document(
+            "# Dashboard\n\n### 🚨 Risk Alerts\n\n| Symbol | Score |\n|---|---:|\n| SPY | 46 |"
+        )
+
+        self.assertIn('class="report-shell"', html)
+        self.assertIn('class="risk-heading"', html)
+        self.assertIn("linear-gradient", html)
+        self.assertIn("<table>", html)
 
 
 class TestChunkContentByMaxWords(unittest.TestCase):

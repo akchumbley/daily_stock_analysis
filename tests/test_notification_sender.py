@@ -1480,6 +1480,24 @@ class TestCustomWebhookSender(unittest.TestCase):
 
         self.assertEqual(payload["title"], "Stock Analysis Report")
 
+    def test_custom_body_template_can_include_styled_html_and_text_fallback(self):
+        cfg = _config(
+            report_language="en",
+            custom_webhook_body_template=(
+                '{"html":$content_html_json,"text":$content_json}'
+            ),
+        )
+        sender = CustomWebhookSender(cfg)
+
+        payload = sender._build_custom_webhook_payload(
+            "https://example.com/webhook",
+            "# Dashboard\n\n### 🚨 Risk Alerts\n\n- Reduce exposure",
+        )
+
+        self.assertIn('class="report-shell"', payload["html"])
+        self.assertIn('class="risk-heading"', payload["html"])
+        self.assertIn("# Dashboard", payload["text"])
+
     @mock.patch("src.notification_sender.custom_webhook_sender.requests.post")
     def test_send_uses_custom_body_template(self, mock_post):
         mock_post.return_value = _response(200)

@@ -1757,8 +1757,9 @@ _FIELD_DEFINITIONS: Dict[str, Dict[str, Any]] = {
         "description": (
             "Optional global JSON body template for custom webhooks. It is rendered before "
             "URL auto-detected payloads such as Bark, Slack, or Discord, and must render to a "
-            "JSON object. Prefer $content_json and $title_json; raw $content and $title are "
-            "not JSON-escaped and can make the template invalid."
+            "JSON object. Prefer $content_json and $title_json; HTML-capable endpoints may "
+            "use $content_html_json. Raw placeholders are not JSON-escaped and can make the "
+            "template invalid."
         ),
         "category": "notification",
         "data_type": "string",
@@ -4739,6 +4740,7 @@ _FIELD_HELP_METADATA: Dict[str, Dict[str, Any]] = {
         "examples": [
             'CUSTOM_WEBHOOK_BODY_TEMPLATE={"msg_type":"text","content":$content_json}',
             'CUSTOM_WEBHOOK_BODY_TEMPLATE={"title":$title_json,"text":$content_json}',
+            'CUSTOM_WEBHOOK_BODY_TEMPLATE={"title":$title_json,"html":$content_html_json,"text":$content_json}',
         ],
         "docs": _DOC_CUSTOM_WEBHOOK,
         "warning_codes": ["json_template_must_render_object"],

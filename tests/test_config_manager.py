@@ -87,7 +87,10 @@ class ConfigManagerTestCase(unittest.TestCase):
         self.assertEqual(self.env_path.read_text(encoding="utf-8"), "STOCK_LIST=000001\n")
 
     def test_custom_webhook_template_placeholders_are_escaped_for_compose(self) -> None:
-        template = '{"title":$title_json,"content":$content_json,"raw":$content,"name":"$OTHER"}'
+        template = (
+            '{"title":$title_json,"content":$content_json,'
+            '"html":$content_html_json,"raw":$content,"name":"$OTHER"}'
+        )
 
         self.manager.apply_updates(
             updates=[("CUSTOM_WEBHOOK_BODY_TEMPLATE", template)],
@@ -98,7 +101,7 @@ class ConfigManagerTestCase(unittest.TestCase):
         env_content = self.env_path.read_text(encoding="utf-8")
         self.assertIn(
             'CUSTOM_WEBHOOK_BODY_TEMPLATE={"title":$$title_json,"content":$$content_json,'
-            '"raw":$$content,"name":"$OTHER"}',
+            '"html":$$content_html_json,"raw":$$content,"name":"$OTHER"}',
             env_content,
         )
         self.assertEqual(

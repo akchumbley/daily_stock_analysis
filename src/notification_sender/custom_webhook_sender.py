@@ -16,6 +16,7 @@ import requests
 from src.config import Config
 from src.formatters import (
     chunk_content_by_max_bytes,
+    markdown_to_html_document,
     slice_at_max_bytes,
     strip_hidden_markdown_metadata,
 )
@@ -343,11 +344,14 @@ class CustomWebhookSender:
             return None
 
         title = self._get_report_title()
+        content_html = markdown_to_html_document(content)
         variables = {
             "title": title,
             "title_json": json.dumps(title, ensure_ascii=False),
             "content": content,
             "content_json": json.dumps(content, ensure_ascii=False),
+            "content_html": content_html,
+            "content_html_json": json.dumps(content_html, ensure_ascii=False),
         }
         rendered = Template(template).safe_substitute(variables)
         try:

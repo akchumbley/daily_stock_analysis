@@ -1000,8 +1000,10 @@ is not a JSON object, DSA falls back to the default payload. Prefer
 CUSTOM_WEBHOOK_BODY_TEMPLATE={"msg_type":"text","content":$content_json}
 ```
 
-Available placeholders: `$content_json`, `$content`, `$title_json`, `$title`.
-Raw `$content` / `$title` are not JSON-escaped, so quotes or newlines can make
+Available placeholders: `$content_json`, `$content_html_json`, `$content`,
+`$content_html`, `$title_json`, `$title`. Use `$content_html_json` for styled
+HTML email APIs such as Resend while retaining `$content_json` as the text fallback.
+Raw `$content` / `$content_html` / `$title` are not JSON-escaped, so quotes or newlines can make
 the template invalid and trigger fallback.
 
 In Docker Compose deployments, saving this value from Web Settings writes these
