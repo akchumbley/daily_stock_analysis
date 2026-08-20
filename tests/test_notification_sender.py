@@ -1464,6 +1464,22 @@ class TestCustomWebhookSender(unittest.TestCase):
             },
         )
 
+    def test_custom_body_template_localizes_title_for_english_reports(self):
+        cfg = _config(
+            report_language="en",
+            custom_webhook_body_template=(
+                '{"title":$title_json,"content":$content_json}'
+            ),
+        )
+        sender = CustomWebhookSender(cfg)
+
+        payload = sender._build_custom_webhook_payload(
+            "https://example.com/webhook",
+            "report body",
+        )
+
+        self.assertEqual(payload["title"], "Stock Analysis Report")
+
     @mock.patch("src.notification_sender.custom_webhook_sender.requests.post")
     def test_send_uses_custom_body_template(self, mock_post):
         mock_post.return_value = _response(200)

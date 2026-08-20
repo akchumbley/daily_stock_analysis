@@ -54,6 +54,29 @@ class TestTwCurrencyLabel(unittest.TestCase):
         # unknown currency still falls back to 元 (unchanged behaviour)
         self.assertIn("元", NotificationService._format_amount_cn(1e8, "ZZZ"))
 
+    def test_english_amount_and_share_units_do_not_use_chinese_characters(self):
+        self.assertEqual(
+            NotificationService._format_amount_cn(1.11e11, "USD", "en"),
+            "111.00B USD",
+        )
+        self.assertEqual(
+            NotificationService._format_per_share(1.05, "USD", "en"),
+            "1.0500 USD",
+        )
+        self.assertEqual(
+            NotificationService._format_net_shares(-1_912_490, "en"),
+            "-1.91M shares",
+        )
+
+
+class TestEnglishMarketSnapshotUnits(unittest.TestCase):
+    def test_analyzer_formats_market_units_in_english(self):
+        analyzer = GeminiAnalyzer.__new__(GeminiAnalyzer)
+        analyzer._config_override = SimpleNamespace(report_language="en")
+
+        self.assertEqual(analyzer._format_volume(117_000_000), "117.00M shares")
+        self.assertEqual(analyzer._format_amount(2_420_000_000), "2.42B")
+
 
 class TestTwInstitutionRender(unittest.TestCase):
     """Point A: 三大法人 renders into the report only for a tw stock with data."""

@@ -27,6 +27,8 @@
 
 Discord 长报告发送复用现有分片链路：单条 `content` 运行时不会超过 Discord 2000 字符限制，Webhook 与 Bot API 都会逐片发送并在片与片之间短暂等待；遇到 429 时按 Discord 返回的 `retry_after` 或 `Retry-After` 做有限重试，避免中途限流后只收到前半段报告。
 
+通知标题与报告中的成交量、财务金额、每股分红和机构持股单位遵循 `REPORT_LANGUAGE`：英文报告使用英文标题及 `K/M/B`、`shares`、ISO 币种代码，中文报告保持万/亿与中文币种单位。
+
 ## Minimal / Advanced 分层
 
 - Minimal key：足以启用一个通知渠道的最小配置。

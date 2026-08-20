@@ -19,6 +19,7 @@ from src.formatters import (
     slice_at_max_bytes,
     strip_hidden_markdown_metadata,
 )
+from src.report_language import get_report_labels, normalize_report_language
 
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,12 @@ class CustomWebhookSender:
         self._custom_webhook_bearer_token = getattr(config, 'custom_webhook_bearer_token', None)
         self._custom_webhook_body_template = getattr(config, 'custom_webhook_body_template', None)
         self._webhook_verify_ssl = getattr(config, 'webhook_verify_ssl', True)
+        self._report_language = normalize_report_language(
+            getattr(config, 'report_language', 'zh')
+        )
+
+    def _get_report_title(self) -> str:
+        return get_report_labels(self._report_language)["report_title"]
  
     def send_to_custom(self, content: str) -> bool:
         """
@@ -288,7 +295,7 @@ class CustomWebhookSender:
             return {
                 "msgtype": "markdown",
                 "markdown": {
-                    "title": "股票分析报告",
+                    "title": self._get_report_title(),
                     "text": sanitized_content
                 }
             }
@@ -315,7 +322,7 @@ class CustomWebhookSender:
         # Bark (iOS 推送)
         if 'api.day.app' in url_lower:
             return {
-                "title": "股票分析报告",
+                "title": self._get_report_title(),
                 "body": sanitized_content[:4000],  # Bark 限制
                 "group": "stock"
             }
@@ -335,7 +342,7 @@ class CustomWebhookSender:
         if not template:
             return None
 
-        title = "股票分析报告"
+        title = self._get_report_title()
         variables = {
             "title": title,
             "title_json": json.dumps(title, ensure_ascii=False),
@@ -376,7 +383,7 @@ class CustomWebhookSender:
             payload = {
                 "msgtype": "markdown",
                 "markdown": {
-                    "title": "股票分析报告",
+                    "title": self._get_report_title(),
                     "text": chunk + marker,
                 },
             }

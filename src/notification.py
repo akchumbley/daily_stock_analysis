@@ -2119,8 +2119,27 @@ class NotificationService(
         "TWD": "新台币",  # 台股 (TWSE/TPEx) 以新台币计价，避免与 A 股「元」(人民币) 混淆
     }
 
+    @staticmethod
+    def _format_compact_english(value: float, noun: str = "") -> str:
+        abs_value = abs(value)
+        sign = "-" if value < 0 else ""
+        if abs_value >= 1e9:
+            rendered = f"{sign}{abs_value / 1e9:.2f}B"
+        elif abs_value >= 1e6:
+            rendered = f"{sign}{abs_value / 1e6:.2f}M"
+        elif abs_value >= 1e3:
+            rendered = f"{sign}{abs_value / 1e3:.2f}K"
+        else:
+            rendered = f"{sign}{abs_value:.0f}"
+        return f"{rendered} {noun}".rstrip()
+
     @classmethod
-    def _format_amount_cn(cls, value: Any, currency: Optional[str] = None) -> str:
+    def _format_amount_cn(
+        cls,
+        value: Any,
+        currency: Optional[str] = None,
+        report_language: str = "zh",
+    ) -> str:
         """Format absolute amounts in 亿/万 + currency suffix; returns N/A on non-numeric.
 
         ``currency`` accepts ``USD``/``HKD``/``CNY``; unknown values fall back to 元.
@@ -2131,6 +2150,9 @@ class NotificationService(
             return "N/A"
         if amount != amount:  # NaN
             return "N/A"
+        if normalize_report_language(report_language) == "en":
+            currency_code = (currency or "CNY").upper()
+            return cls._format_compact_english(amount, currency_code)
         sign = "-" if amount < 0 else ""
         abs_amount = abs(amount)
         suffix = cls._CURRENCY_SUFFIX.get((currency or "").upper(), "元")
@@ -2148,13 +2170,20 @@ class NotificationService(
             return "N/A"
 
     @classmethod
-    def _format_per_share(cls, value: Any, currency: Optional[str] = None) -> str:
+    def _format_per_share(
+        cls,
+        value: Any,
+        currency: Optional[str] = None,
+        report_language: str = "zh",
+    ) -> str:
         try:
             amount = float(value)
         except (TypeError, ValueError):
             return "N/A"
         if amount != amount:  # NaN
             return "N/A"
+        if normalize_report_language(report_language) == "en":
+            return f"{amount:.4f} {(currency or 'CNY').upper()}"
         suffix = cls._CURRENCY_SUFFIX.get((currency or "").upper(), "元")
         return f"{amount:.4f} {suffix}"
 
@@ -2240,9 +2269,9 @@ class NotificationService(
         report_language = self._get_report_language(result)
         labels = get_report_labels(report_language)
 
-        self._append_financial_summary(lines, blocks, labels)
-        self._append_shareholder_return(lines, blocks, labels)
-        self._append_institutional_flow(lines, blocks, labels)
+        self._append_financial_summary(lines, blocks, labels, report_language)
+        self._append_shareholder_return(lines, blocks, labels, report_language)
+        self._append_institutional_flow(lines, blocks, labels, report_language)
         self._append_related_boards(lines, blocks, labels)
 
     def _append_financial_summary(
@@ -2250,15 +2279,16 @@ class NotificationService(
         lines: List[str],
         blocks: Dict[str, Any],
         labels: Dict[str, str],
+        report_language: str = "zh",
     ) -> None:
         report = blocks.get("financial_report") or {}
         growth = blocks.get("growth") or {}
         currency = report.get("currency") if isinstance(report.get("currency"), str) else None
         cells = {
             "report_date": self._format_text(report.get("report_date")),
-            "revenue": self._format_amount_cn(report.get("revenue"), currency),
-            "net_profit": self._format_amount_cn(report.get("net_profit_parent"), currency),
-            "operating_cash_flow": self._format_amount_cn(report.get("operating_cash_flow"), currency),
+            "revenue": self._format_amount_cn(report.get("revenue"), currency, report_language),
+            "net_profit": self._format_amount_cn(report.get("net_profit_parent"), currency, report_language),
+            "operating_cash_flow": self._format_amount_cn(report.get("operating_cash_flow"), currency, report_language),
             "roe": self._format_percent(report.get("roe") if report.get("roe") is not None else growth.get("roe")),
             "revenue_yoy": self._format_percent(growth.get("revenue_yoy")),
             "net_profit_yoy": self._format_percent(growth.get("net_profit_yoy")),
@@ -2291,6 +2321,7 @@ class NotificationService(
         lines: List[str],
         blocks: Dict[str, Any],
         labels: Dict[str, str],
+        report_language: str = "zh",
     ) -> None:
         dividend = blocks.get("dividend") or {}
         report = blocks.get("financial_report") or {}
@@ -2307,7 +2338,11 @@ class NotificationService(
 
         ttm_event_count = dividend.get("ttm_event_count")
         cells = {
-            "ttm_cash": self._format_per_share(dividend.get("ttm_cash_dividend_per_share"), dividend_currency),
+            "ttm_cash": self._format_per_share(
+                dividend.get("ttm_cash_dividend_per_share"),
+                dividend_currency,
+                report_language,
+            ),
             "ttm_count": str(ttm_event_count) if isinstance(ttm_event_count, int) else "N/A",
             "ttm_yield": self._format_percent(dividend.get("ttm_dividend_yield_pct")),
             "latest_ex": self._format_text(latest_event.get("ex_dividend_date") or latest_event.get("event_date")),
@@ -2331,7 +2366,7 @@ class NotificationService(
         ])
 
     @classmethod
-    def _format_net_shares(cls, value: Any) -> str:
+    def _format_net_shares(cls, value: Any, report_language: str = "zh") -> str:
         """Format an institutional net buy/sell in 万股/亿股, signed (+ = net buy).
 
         Thresholds: abs >= 1e8 -> 亿股, >= 1e4 -> 万股, else 股. None/NaN/non-numeric -> N/A.
@@ -2342,6 +2377,9 @@ class NotificationService(
             return "N/A"
         if amount != amount:  # NaN
             return "N/A"
+        if normalize_report_language(report_language) == "en":
+            sign = "+" if amount > 0 else ""
+            return f"{sign}{cls._format_compact_english(amount, 'shares')}"
         sign = "+" if amount > 0 else ("-" if amount < 0 else "")
         a = abs(amount)
         if a >= 1e8:
@@ -2355,6 +2393,7 @@ class NotificationService(
         lines: List[str],
         blocks: Dict[str, Any],
         labels: Dict[str, str],
+        report_language: str = "zh",
     ) -> None:
         """Append the 三大法人 (institutional flows) table — tw-only.
 
@@ -2366,10 +2405,10 @@ class NotificationService(
             return
         inst = blocks.get("institution") or {}
         cells = {
-            "foreign": self._format_net_shares(inst.get("foreign_net")),
-            "trust": self._format_net_shares(inst.get("trust_net")),
-            "dealer": self._format_net_shares(inst.get("dealer_net")),
-            "total": self._format_net_shares(inst.get("total_net")),
+            "foreign": self._format_net_shares(inst.get("foreign_net"), report_language),
+            "trust": self._format_net_shares(inst.get("trust_net"), report_language),
+            "dealer": self._format_net_shares(inst.get("dealer_net"), report_language),
+            "total": self._format_net_shares(inst.get("total_net"), report_language),
         }
         if all(v == "N/A" for v in cells.values()):
             return

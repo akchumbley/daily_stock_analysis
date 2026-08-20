@@ -4185,6 +4185,17 @@ class GeminiAnalyzer:
         """格式化成交量显示"""
         if volume is None:
             return 'N/A'
+        report_language = normalize_report_language(
+            getattr(self._get_runtime_config(), "report_language", "zh")
+        )
+        if report_language == "en":
+            if volume >= 1e9:
+                return f"{volume / 1e9:.2f}B shares"
+            if volume >= 1e6:
+                return f"{volume / 1e6:.2f}M shares"
+            if volume >= 1e3:
+                return f"{volume / 1e3:.2f}K shares"
+            return f"{volume:.0f} shares"
         if volume >= 1e8:
             return f"{volume / 1e8:.2f} 亿股"
         elif volume >= 1e4:
@@ -4196,6 +4207,17 @@ class GeminiAnalyzer:
         """格式化成交额显示"""
         if amount is None:
             return 'N/A'
+        report_language = normalize_report_language(
+            getattr(self._get_runtime_config(), "report_language", "zh")
+        )
+        if report_language == "en":
+            if amount >= 1e9:
+                return f"{amount / 1e9:.2f}B"
+            if amount >= 1e6:
+                return f"{amount / 1e6:.2f}M"
+            if amount >= 1e3:
+                return f"{amount / 1e3:.2f}K"
+            return f"{amount:.0f}"
         if amount >= 1e8:
             return f"{amount / 1e8:.2f} 亿元"
         elif amount >= 1e4:
