@@ -1021,7 +1021,8 @@ P7 只做盘前 / 盘中 / 盘后分析的用户可见说明收口，不新增�
 | --- | --- |
 | `POST /api/v1/analysis/analyze` | 支持 `analysis_phase=auto|premarket|intraday|postmarket`；不传时默认 `auto`。 |
 | Web 主分析 / 重新分析 / 持仓手动分析 | 当前没有阶段覆盖 selector；前端调用默认传 `auto`。进行中任务面板展示请求阶段，最终报告页展示最终阶段标签。 |
-| Bot / CLI / schedule / 默认 GitHub Actions | 不传 `analysis_phase`，继续走 `auto` 推断；默认收盘分析行为不变。 |
+| Bot / schedule / 默认 GitHub Actions | 继续走 `auto` 推断；默认收盘分析行为不变。 |
+| CLI / 手动 GitHub Actions | 可通过 `--analysis-phase` 或 workflow-dispatch 输入选择 `auto`、`premarket`、`intraday` 或 `postmarket`。 |
 | 历史 / 回测 / 通知 / 告警 | 只消费公开 `market_phase_summary` 和低敏 `analysis_context_pack_overview`；不公开完整 pack、Prompt summary、新闻正文或持仓敏感明细。 |
 
 `analysis_phase` 是请求覆盖值，最终报告阶段仍以 `report.meta.market_phase_summary.phase` 为准。旧调用不传 `analysis_phase` 时保持兼容；旧历史缺少 `market_phase_summary` 或 `analysis_context_pack_overview` 时返回空字段，不影响报告读取。回测查询支持 `analysis_phase=premarket|intraday|postmarket|unknown` 过滤，并按 P6 规则把午间和临近收盘归入 intraday。

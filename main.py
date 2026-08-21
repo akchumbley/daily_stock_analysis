@@ -370,6 +370,13 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        '--analysis-phase',
+        choices=('auto', 'premarket', 'intraday', 'postmarket'),
+        default='auto',
+        help='Override the market phase for this run (default: auto)',
+    )
+
+    parser.add_argument(
         '--webui',
         action='store_true',
         help='启动 Web 管理界面'
@@ -882,6 +889,7 @@ def run_full_analysis(
             save_context_snapshot=save_context_snapshot,
             daily_market_context_enabled=should_use_daily_market_context,
             daily_market_context_allow_generate=should_use_daily_market_context,
+            analysis_phase=getattr(args, "analysis_phase", "auto"),
         )
         if should_use_daily_market_context:
             # Prompt-side context can reuse historical summaries, while full-merge

@@ -23,6 +23,16 @@ on:
         required: false
         default: false
         type: boolean
+      analysis_phase:
+        description: 'Market phase override for this manual run'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - premarket
+          - intraday
+          - postmarket
 
 # 并发控制：同一时间只运行一个分析任务
 concurrency:
@@ -531,14 +541,18 @@ jobs:
           fi
 
           # 执行分析
+          ANALYSIS_PHASE="${{ github.event.inputs.analysis_phase || 'auto' }}"
+          ANALYSIS_PHASE_ARG="--analysis-phase $ANALYSIS_PHASE"
+          echo "Market phase: $ANALYSIS_PHASE"
+
           if [ "$MODE" = "news-check" ]; then
             python scripts/check_news.py --stocks "$STOCK_LIST"
           elif [ "$MODE" = "market-only" ]; then
-            python main.py --market-review $FORCE_RUN_ARG
+            python main.py --market-review $FORCE_RUN_ARG $ANALYSIS_PHASE_ARG
           elif [ "$MODE" = "stocks-only" ]; then
-            python main.py --no-market-review $FORCE_RUN_ARG
+            python main.py --no-market-review $FORCE_RUN_ARG $ANALYSIS_PHASE_ARG
           else
-            python main.py $FORCE_RUN_ARG
+            python main.py $FORCE_RUN_ARG $ANALYSIS_PHASE_ARG
           fi
       
       - name: 上传分析报告

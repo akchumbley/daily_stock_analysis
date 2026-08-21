@@ -895,7 +895,8 @@ Entrypoints and visibility:
 | --- | --- |
 | `POST /api/v1/analysis/analyze` | Supports `analysis_phase=auto|premarket|intraday|postmarket`; omitted values default to `auto`. |
 | Web main analysis / re-analysis / portfolio manual analysis | There is currently no phase override selector. The frontend defaults to `auto`, the in-progress task panel shows the requested phase, and the final report page shows the final phase label. |
-| Bot / CLI / schedule / default GitHub Actions | Do not pass `analysis_phase`; they continue to use `auto` inference, and the default post-market behavior is unchanged. |
+| Bot / schedule / default GitHub Actions | Continue to use `auto` inference, and the default post-market behavior is unchanged. |
+| CLI / manual GitHub Actions | Optionally select `auto`, `premarket`, `intraday`, or `postmarket` with `--analysis-phase` or the workflow-dispatch input. |
 | History / backtest / notifications / alerts | Only consume public `market_phase_summary` and low-sensitivity `analysis_context_pack_overview`; they do not expose the full pack, prompt summary, news body text, or sensitive portfolio details. |
 
 `analysis_phase` is the requested override value, while the final report phase remains `report.meta.market_phase_summary.phase`. Older callers that omit `analysis_phase` remain compatible. Older history rows without `market_phase_summary` or `analysis_context_pack_overview` return empty fields and still load normally. Backtest queries support `analysis_phase=premarket|intraday|postmarket|unknown` filtering, and P6 folds lunch-break and near-close phases into intraday.

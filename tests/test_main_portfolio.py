@@ -18,6 +18,16 @@ class MainPortfolioTest(unittest.TestCase):
 
         self.assertEqual(args.portfolio, "futu")
 
+    def test_parse_arguments_accepts_analysis_phase_override(self):
+        with patch.object(
+            sys,
+            "argv",
+            ["main.py", "--analysis-phase", "premarket"],
+        ):
+            args = main.parse_arguments()
+
+        self.assertEqual(args.analysis_phase, "premarket")
+
     def test_resolve_portfolio_stock_codes_uses_futu_loader(self):
         args = SimpleNamespace(portfolio="futu")
         with patch(
