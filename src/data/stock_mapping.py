@@ -165,9 +165,9 @@ STOCK_ENGLISH_NAME_MAP: Dict[str, Tuple[str, ...]] = {
     "MSTR": ("Strategy Inc.", "Strategy", "MicroStrategy Incorporated", "MicroStrategy"),
     "APLD": ("Applied Digital Corporation", "Applied Digital"),
     "SPCX": ("Space Exploration Technologies Corporation", "SpaceX"),
-    "SPY": ("SPDR S&P 500 ETF Trust", "SPDR S&P 500 ETF", "SPY"),
-    "QQQ": ("Invesco QQQ Trust", "Invesco QQQ", "QQQ"),
-    "TQQQ": ("ProShares UltraPro QQQ", "TQQQ"),
+    "SPY": ("SPDR S&P 500 ETF Trust", "SPDR S&P 500 ETF", "S&P 500", "SPY"),
+    "QQQ": ("Invesco QQQ Trust", "Invesco QQQ", "Nasdaq-100", "Nasdaq 100", "QQQ"),
+    "TQQQ": ("ProShares UltraPro QQQ", "Nasdaq-100", "Nasdaq 100", "TQQQ"),
     # === HK stocks (5-digit) ===
     "00700": ("Tencent Holdings", "Tencent"),
     "03690": ("Meituan",),

@@ -2448,6 +2448,7 @@ class SearchService:
         _MACRO_NEWS_CATEGORY: 2,
     }
     _AMBIGUOUS_EN_COMPANY_NAMES = {"apple", "meta", "square", "target", "gap"}
+    _AMBIGUOUS_PLAIN_TICKERS = {"SPY"}
     _AMBIGUOUS_EN_CONFIRMING_EVENT_TERMS = (
         "earnings", "revenue", "profit", "guidance", "filing", "buyback",
         "dividend", "lawsuit", "merger", "acquisition",
@@ -3112,6 +3113,11 @@ class SearchService:
             return False
 
         if cls._US_STOCK_RE.match(term) and term.upper() == term and not term.startswith("$"):
+            if term in cls._AMBIGUOUS_PLAIN_TICKERS:
+                # Common English words used as tickers must retain ticker-like
+                # casing; "U.S. spy" is not an SPY ETF identity hit.
+                pattern = r"(?<![A-Za-z0-9])" + re.escape(term) + r"(?![A-Za-z0-9])"
+                return bool(re.search(pattern, text))
             ticker_pattern = f"(?:{re.escape(term)}|{re.escape(term.lower())})"
             pattern = (
                 r"(?<![A-Za-z0-9$:.])"
@@ -3450,8 +3456,14 @@ class SearchService:
             # Do not score an alias term twice when the current display name
             # already produced the same identity (for example Apple -> Apple).
             seen_identity_terms: set = set(cls._company_identity_terms(stock_name))
+            canonical_stock_code = canonicalize_foreign_stock_code(stock_code)
             for alias in english_aliases:
                 for term in cls._company_identity_terms(alias):
+                    if (
+                        canonical_stock_code in cls._AMBIGUOUS_PLAIN_TICKERS
+                        and term.casefold() == canonical_stock_code.casefold()
+                    ):
+                        continue
                     if term in seen_identity_terms:
                         continue
                     seen_identity_terms.add(term)

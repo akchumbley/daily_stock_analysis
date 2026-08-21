@@ -105,6 +105,24 @@ def test_yfinance_rejects_generic_zero_relevance_feed() -> None:
     assert response.results == []
 
 
+def test_yfinance_does_not_treat_lowercase_spy_as_spy_etf_news() -> None:
+    generic = _news_item(title="Former U.S. spy faces deportation hearing")
+    service = SearchService(yfinance_news_enabled=True, news_max_age_days=3)
+
+    with patch(
+        "yfinance.Search",
+        return_value=SimpleNamespace(news=[generic]),
+    ):
+        response = service.search_stock_news(
+            stock_code="SPY",
+            stock_name="SPDR S&P 500 ETF Trust",
+            max_results=3,
+        )
+
+    assert response.provider == "Filtered"
+    assert response.results == []
+
+
 def test_yfinance_fallback_can_be_disabled() -> None:
     service = SearchService(yfinance_news_enabled=False)
 
