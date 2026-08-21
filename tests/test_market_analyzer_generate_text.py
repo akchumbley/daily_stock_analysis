@@ -3574,6 +3574,35 @@ Index text.
         assert "Turnover (USD bn)" in result
         assert "| S&P 500 | 5200.00 |" in result
 
+    def test_us_english_indices_localize_provider_names(self):
+        from src.core.market_profile import US_PROFILE
+        from src.market_analyzer import MarketIndex, MarketOverview
+
+        ma = self._make_market_analyzer_with_mock_generate_text(return_value=None)
+        ma.config.report_language = "en"
+        ma.region = "us"
+        ma.profile = US_PROFILE
+        overview = MarketOverview(
+            date="2026-08-20",
+            indices=[
+                MarketIndex(code="SPX", name="标普500指数", current=7641.16, change_pct=-0.87),
+                MarketIndex(code="IXIC", name="纳斯达克综合指数", current=26067.17, change_pct=-1.0),
+                MarketIndex(code="DJI", name="道琼斯工业指数", current=52759.21, change_pct=-1.32),
+                MarketIndex(code="VIX", name="VIX恐慌指数", current=16.01, change_pct=7.52),
+            ],
+        )
+
+        result = ma._build_indices_block(overview)
+
+        assert "标普500指数" not in result
+        assert "纳斯达克综合指数" not in result
+        assert "道琼斯工业指数" not in result
+        assert "VIX恐慌指数" not in result
+        assert "| S&P 500 |" in result
+        assert "| Nasdaq Composite |" in result
+        assert "| Dow Jones Industrial Average |" in result
+        assert "| VIX |" in result
+
     def test_indices_block_uses_configured_red_up_color_scheme(self):
         from src.market_analyzer import MarketOverview, MarketIndex
 

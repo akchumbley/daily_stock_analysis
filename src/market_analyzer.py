@@ -1110,6 +1110,29 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
             reasons.append("limited structured breadth data; using available market inputs")
         return reasons[:4]
 
+    @staticmethod
+    def _get_index_display_name(name: str, language: str) -> str:
+        if language != "en":
+            return name
+        english_names = {
+            "标普500指数": "S&P 500",
+            "纳斯达克综合指数": "Nasdaq Composite",
+            "道琼斯工业指数": "Dow Jones Industrial Average",
+            "VIX恐慌指数": "VIX",
+            "上证指数": "Shanghai Composite",
+            "深证成指": "Shenzhen Component",
+            "创业板指": "ChiNext",
+            "科创50": "STAR 50",
+            "沪深300": "CSI 300",
+            "上证50": "SSE 50",
+            "中证500": "CSI 500",
+            "恒生指数": "Hang Seng Index",
+            "恒生科技指数": "Hang Seng TECH Index",
+            "日经225": "Nikkei 225",
+            "韩国综合指数": "KOSPI",
+        }
+        return english_names.get(str(name).strip(), name)
+
     def _build_indices_block(self, overview: MarketOverview) -> str:
         """构建指数行情表格"""
         if not overview.indices:
@@ -1128,8 +1151,9 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
             arrow = self._get_index_change_arrow(idx.change_pct)
             amount_raw = idx.amount or 0.0
             amount_str = self._format_turnover_value(amount_raw)
+            display_name = self._get_index_display_name(idx.name, self._get_review_language())
             lines.append(
-                f"| {idx.name} | {idx.current:.2f} | {arrow} {idx.change_pct:+.2f}% | "
+                f"| {display_name} | {idx.current:.2f} | {arrow} {idx.change_pct:+.2f}% | "
                 f"{self._format_optional_number(idx.open)} | {self._format_optional_number(idx.high)} | "
                 f"{self._format_optional_number(idx.low)} | {self._format_optional_pct(idx.amplitude)} | {amount_str} |"
             )
@@ -1424,7 +1448,8 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
         indices_text = ""
         for idx in overview.indices:
             direction = "↑" if idx.change_pct > 0 else "↓" if idx.change_pct < 0 else "-"
-            indices_text += f"- {idx.name}: {idx.current:.2f} ({direction}{abs(idx.change_pct):.2f}%)\n"
+            display_name = self._get_index_display_name(idx.name, review_language)
+            indices_text += f"- {display_name}: {idx.current:.2f} ({direction}{abs(idx.change_pct):.2f}%)\n"
         
         # 板块信息
         top_sectors_text = self._format_ranking_summary(overview.top_sectors)
@@ -1684,7 +1709,8 @@ Output the report content directly, no extra commentary.
         indices_text = ""
         for idx in overview.indices[:4]:
             marker = self._get_index_change_arrow(idx.change_pct)
-            indices_text += f"- **{idx.name}**: {idx.current:.2f} ({marker} {idx.change_pct:+.2f}%)\n"
+            display_name = self._get_index_display_name(idx.name, template_language)
+            indices_text += f"- **{display_name}**: {idx.current:.2f} ({marker} {idx.change_pct:+.2f}%)\n"
         
         # 板块信息
         separator = ", " if template_language == "en" else "、"

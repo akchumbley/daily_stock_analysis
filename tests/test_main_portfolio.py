@@ -328,6 +328,7 @@ class MainPortfolioTest(unittest.TestCase):
             analysis_delay=0,
             backtest_enabled=False,
             report_type="simple",
+            report_language="en",
         )
         pipeline = MagicMock()
         pipeline.run.return_value = [
@@ -375,8 +376,8 @@ class MainPortfolioTest(unittest.TestCase):
         self.assertEqual(main._LAST_ANALYSIS_FAILURE_REASON, "report_save_failed")
         pipeline.notifier.send.assert_called_once()
         combined_content = pipeline.notifier.send.call_args.args[0]
-        self.assertIn("# 📈 大盘复盘\n\nmarket review", combined_content)
-        self.assertIn("# 🚀 个股决策仪表盘\n\ndashboard", combined_content)
+        self.assertIn("# 📈 Market Review\n\nmarket review", combined_content)
+        self.assertIn("# 🚀 Stock Decision Dashboard\n\ndashboard", combined_content)
         run_auto_backtest.assert_called_once_with(config)
 
     def test_run_full_analysis_returns_false_when_market_review_only_run_generates_no_report(self):
