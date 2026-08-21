@@ -1166,6 +1166,32 @@ _FIELD_DEFINITIONS: Dict[str, Dict[str, Any]] = {
         ],
         "warning_codes": ["cloud_deployments_may_disable"],
     },
+    "YFINANCE_NEWS_ENABLED": {
+        "title": "Yahoo Finance News Fallback",
+        "description": "Use credential-free Yahoo Finance headlines when configured search providers are unavailable or return no usable stock news.",
+        "category": "data_source",
+        "data_type": "boolean",
+        "ui_control": "switch",
+        "is_sensitive": False,
+        "is_required": False,
+        "is_editable": True,
+        "default_value": "true",
+        "options": [],
+        "validation": {},
+        "display_order": 59,
+        "help_key": "settings.data_source.news_window",
+        "examples": [
+            "YFINANCE_NEWS_ENABLED=true",
+            "YFINANCE_NEWS_ENABLED=false",
+        ],
+        "docs": [
+            {
+                "label": "完整指南：数据源配置",
+                "href": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/docs/full-guide.md#数据源配置",
+            },
+        ],
+        "warning_codes": [],
+    },
     "NEWS_MAX_AGE_DAYS": {
         "title": "News Max Age (Days)",
         "description": "Maximum age of news in days. Older articles are excluded from analysis context.",

@@ -409,6 +409,114 @@ class BaseSearchProvider(ABC):
         return self._execute_search(query, max_results=max_results, days=days)
 
 
+class YFinanceNewsProvider(BaseSearchProvider):
+    """Credential-free Yahoo Finance news search powered by yfinance."""
+
+    def __init__(self) -> None:
+        # The base class expects a key for its shared retry/accounting flow. This
+        # sentinel is never transmitted; Yahoo Finance does not require an API key.
+        super().__init__(["credential-free"], "YahooFinance")
+
+    @staticmethod
+    def _url_from_value(value: Any) -> str:
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            return str(value.get("url") or value.get("link") or "")
+        return ""
+
+    @staticmethod
+    def _published_date(value: Any) -> Optional[str]:
+        if value in (None, ""):
+            return None
+        if isinstance(value, (int, float)):
+            try:
+                return datetime.fromtimestamp(value, tz=timezone.utc).isoformat()
+            except (OverflowError, OSError, ValueError):
+                return None
+        return str(value)
+
+    def _do_search(
+        self,
+        query: str,
+        api_key: str,
+        max_results: int,
+        days: int = 7,
+    ) -> SearchResponse:
+        del api_key, days
+        try:
+            import yfinance as yf
+        except ImportError:
+            return SearchResponse(
+                query=query,
+                results=[],
+                provider=self.name,
+                success=False,
+                error_message="yfinance is not installed",
+            )
+
+        try:
+            raw_items = getattr(yf.Search(query, news_count=max_results), "news", None) or []
+        except Exception as exc:
+            return SearchResponse(
+                query=query,
+                results=[],
+                provider=self.name,
+                success=False,
+                error_message=str(exc),
+            )
+
+        results: List[SearchResult] = []
+        for raw_item in raw_items[:max_results]:
+            if not isinstance(raw_item, dict):
+                continue
+            content = raw_item.get("content")
+            item = content if isinstance(content, dict) else raw_item
+            title = str(item.get("title") or raw_item.get("title") or "").strip()
+            if not title:
+                continue
+            snippet = str(
+                item.get("summary")
+                or item.get("description")
+                or raw_item.get("summary")
+                or raw_item.get("description")
+                or title
+            ).strip()
+            provider = item.get("provider")
+            source = (
+                str(provider.get("displayName") or provider.get("name") or "").strip()
+                if isinstance(provider, dict)
+                else str(provider or raw_item.get("publisher") or "Yahoo Finance").strip()
+            )
+            url = (
+                self._url_from_value(item.get("clickThroughUrl"))
+                or self._url_from_value(item.get("canonicalUrl"))
+                or self._url_from_value(item.get("link"))
+                or self._url_from_value(raw_item.get("link"))
+            )
+            published_date = self._published_date(
+                item.get("pubDate")
+                or item.get("publishedAt")
+                or raw_item.get("providerPublishTime")
+            )
+            results.append(
+                SearchResult(
+                    title=title,
+                    snippet=snippet[:500],
+                    url=url,
+                    source=source or "Yahoo Finance",
+                    published_date=published_date,
+                )
+            )
+
+        return SearchResponse(
+            query=query,
+            results=results,
+            provider=self.name,
+            success=True,
+        )
+
+
 class TavilySearchProvider(BaseSearchProvider):
     """
     Tavily 搜索引擎
@@ -2390,6 +2498,7 @@ class SearchService:
         minimax_keys: Optional[List[str]] = None,
         searxng_base_urls: Optional[List[str]] = None,
         searxng_public_instances_enabled: bool = False,
+        yfinance_news_enabled: bool = False,
         news_max_age_days: int = 3,
         news_strategy_profile: str = "short",
     ):
@@ -2405,6 +2514,7 @@ class SearchService:
             minimax_keys: MiniMax API Key 列表
             searxng_base_urls: SearXNG 实例地址列表（自建无配额兜底）
             searxng_public_instances_enabled: 未配置自建实例时，是否自动使用公共 SearXNG 实例
+            yfinance_news_enabled: 是否启用无需 API Key 的 Yahoo Finance 新闻兜底
             news_max_age_days: 新闻最大时效（天）
             news_strategy_profile: 新闻窗口策略档位（ultra_short/short/medium/long）
         """
@@ -2417,6 +2527,7 @@ class SearchService:
             "minimax_keys": list(minimax_keys or []),
             "searxng_base_urls": list(searxng_base_urls or []),
             "searxng_public_instances_enabled": bool(searxng_public_instances_enabled),
+            "yfinance_news_enabled": bool(yfinance_news_enabled),
             "news_max_age_days": int(news_max_age_days),
             "news_strategy_profile": news_strategy_profile,
         }
@@ -2480,6 +2591,12 @@ class SearchService:
         if anspire_keys:
             self._providers.insert(0, AnspireSearchProvider(anspire_keys))
             logger.info(f"已配置 Anspire Search 搜索，共 {len(anspire_keys)} 个 API Key")
+
+        # Credential-free fallback stays last so configured premium/search
+        # providers retain priority and Yahoo only fills genuine gaps.
+        if yfinance_news_enabled:
+            self._providers.append(YFinanceNewsProvider())
+            logger.info("已启用 Yahoo Finance 无密钥新闻兜底")
             
         if not self._providers:
             logger.warning("未配置任何搜索能力，新闻搜索功能将不可用")

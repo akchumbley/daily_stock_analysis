@@ -416,6 +416,7 @@ git push
    - `full` - Full analysis (stocks + market)
    - `market-only` - Market review only
    - `stocks-only` - Stock analysis only
+   - `news-check` - Validate recent watchlist headlines without AI calls or notifications
 5. Click green **"Run workflow"** button
 
 #### 5. View Execution Logs
