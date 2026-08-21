@@ -243,6 +243,7 @@ class SearchResult:
     relevance_score: Optional[int] = None
     relevance_category: Optional[str] = None
     relevance_reasons: Optional[List[str]] = None
+    provider_symbol: Optional[str] = None
     
     def to_text(self) -> str:
         """转换为文本格式"""
@@ -445,6 +446,7 @@ class YFinanceNewsProvider(BaseSearchProvider):
         days: int = 7,
         stock_code: Optional[str] = None,
         identity_terms: Optional[Sequence[str]] = None,
+        ticker_feed_enabled: bool = False,
     ) -> SearchResponse:
         del api_key, days
         try:
@@ -473,6 +475,21 @@ class YFinanceNewsProvider(BaseSearchProvider):
 
         raw_batches: List[List[Dict[str, Any]]] = []
         errors: List[str] = []
+        if ticker_feed_enabled and stock_code:
+            try:
+                ticker_news = yf.Ticker(stock_code).get_news(
+                    count=max_results,
+                    tab="news",
+                ) or []
+                raw_batches.append(
+                    [
+                        {**raw_item, "_dsa_provider_symbol": stock_code}
+                        for raw_item in ticker_news
+                        if isinstance(raw_item, dict)
+                    ]
+                )
+            except Exception as exc:
+                errors.append(f"{stock_code} ticker feed: {exc}")
         for compact_query in queries:
             try:
                 found = getattr(
@@ -564,6 +581,9 @@ class YFinanceNewsProvider(BaseSearchProvider):
                     url=url,
                     source=source or "Yahoo Finance",
                     published_date=published_date,
+                    provider_symbol=str(
+                        raw_item.get("_dsa_provider_symbol") or ""
+                    ).strip() or None,
                 )
             )
 
@@ -582,6 +602,7 @@ class YFinanceNewsProvider(BaseSearchProvider):
         *,
         stock_code: Optional[str] = None,
         identity_terms: Optional[Sequence[str]] = None,
+        ticker_feed_enabled: bool = False,
     ) -> SearchResponse:
         return self._execute_search(
             query,
@@ -589,6 +610,7 @@ class YFinanceNewsProvider(BaseSearchProvider):
             days=days,
             stock_code=stock_code,
             identity_terms=identity_terms,
+            ticker_feed_enabled=ticker_feed_enabled,
         )
 
 
@@ -3378,6 +3400,14 @@ class SearchService:
         has_unambiguous_company_signal = False
         has_ambiguous_company_signal = False
 
+        if (
+            item.provider_symbol
+            and canonicalize_foreign_stock_code(item.provider_symbol)
+            == canonicalize_foreign_stock_code(stock_code)
+        ):
+            score += 24
+            reasons.append("provider ticker feed association")
+
         def add_reason(reason: str) -> None:
             if reason not in reasons and len(reasons) < 5:
                 reasons.append(reason)
@@ -3539,6 +3569,7 @@ class SearchService:
             relevance_score=score,
             relevance_category=category,
             relevance_reasons=reasons,
+            provider_symbol=item.provider_symbol,
         )
 
     @classmethod
@@ -3901,6 +3932,7 @@ class SearchService:
                             relevance_score=item.relevance_score,
                             relevance_category=item.relevance_category,
                             relevance_reasons=item.relevance_reasons,
+                            provider_symbol=item.provider_symbol,
                         )
                     )
                     if len(filtered) >= max_results:
@@ -3925,6 +3957,7 @@ class SearchService:
                     relevance_score=item.relevance_score,
                     relevance_category=item.relevance_category,
                     relevance_reasons=item.relevance_reasons,
+                    provider_symbol=item.provider_symbol,
                 )
             )
             if len(filtered) >= max_results:
@@ -3978,6 +4011,7 @@ class SearchService:
                     relevance_score=item.relevance_score,
                     relevance_category=item.relevance_category,
                     relevance_reasons=item.relevance_reasons,
+                    provider_symbol=item.provider_symbol,
                 )
             )
 
@@ -4325,6 +4359,10 @@ class SearchService:
                         identity_terms=(
                             foreign_stock_identity_aliases(stock_code)
                             or (stock_name,)
+                        ),
+                        ticker_feed_enabled=self.is_index_or_etf(
+                            stock_code,
+                            stock_name,
                         ),
                     )
 

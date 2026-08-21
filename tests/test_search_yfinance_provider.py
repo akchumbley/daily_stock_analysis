@@ -109,10 +109,10 @@ def test_yfinance_does_not_treat_lowercase_spy_as_spy_etf_news() -> None:
     generic = _news_item(title="Former U.S. spy faces deportation hearing")
     service = SearchService(yfinance_news_enabled=True, news_max_age_days=3)
 
-    with patch(
-        "yfinance.Search",
-        return_value=SimpleNamespace(news=[generic]),
+    with patch("yfinance.Ticker") as ticker, patch(
+        "yfinance.Search", return_value=SimpleNamespace(news=[generic])
     ):
+        ticker.return_value.get_news.return_value = []
         response = service.search_stock_news(
             stock_code="SPY",
             stock_name="SPDR S&P 500 ETF Trust",
@@ -121,6 +121,26 @@ def test_yfinance_does_not_treat_lowercase_spy_as_spy_etf_news() -> None:
 
     assert response.provider == "Filtered"
     assert response.results == []
+
+
+def test_yfinance_uses_ticker_scoped_feed_for_etf_context() -> None:
+    market_item = _news_item(title="Technology shares lead the market higher")
+    service = SearchService(yfinance_news_enabled=True, news_max_age_days=3)
+
+    with patch("yfinance.Ticker") as ticker, patch(
+        "yfinance.Search", return_value=SimpleNamespace(news=[])
+    ):
+        ticker.return_value.get_news.return_value = [market_item]
+        response = service.search_stock_news(
+            stock_code="QQQ",
+            stock_name="Invesco QQQ Trust",
+            max_results=3,
+        )
+
+    ticker.assert_called_once_with("QQQ")
+    assert response.provider == "YahooFinance"
+    assert response.results[0].provider_symbol == "QQQ"
+    assert response.results[0].relevance_score > 0
 
 
 def test_yfinance_fallback_can_be_disabled() -> None:
