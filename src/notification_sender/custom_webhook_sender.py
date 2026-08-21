@@ -173,14 +173,20 @@ class CustomWebhookSender:
         body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
         response = requests.post(url, data=body, headers=headers, timeout=timeout, verify=self._webhook_verify_ssl)
         if response.status_code in (200, 201, 202):
-            self._log_custom_webhook_success(response)
+            self._log_custom_webhook_success(url, response, headers=headers, timeout=timeout)
             return True
         logger.error(f"自定义 Webhook 推送失败: HTTP {response.status_code}")
         logger.debug(f"响应内容: {response.text[:200]}")
         return False
 
-    @staticmethod
-    def _log_custom_webhook_success(response: requests.Response) -> None:
+    def _log_custom_webhook_success(
+        self,
+        url: str,
+        response: requests.Response,
+        *,
+        headers: Dict[str, str],
+        timeout: int,
+    ) -> None:
         try:
             payload = response.json()
         except ValueError:
@@ -190,6 +196,49 @@ class CustomWebhookSender:
         message_id = payload.get("id")
         if isinstance(message_id, str) and message_id:
             logger.info("Custom Webhook accepted message id: %s", message_id)
+            self._log_resend_delivery_status(url, message_id, headers=headers, timeout=timeout)
+
+    def _log_resend_delivery_status(
+        self,
+        url: str,
+        message_id: str,
+        *,
+        headers: Dict[str, str],
+        timeout: int,
+    ) -> None:
+        if "api.resend.com/emails" not in (url or "").lower():
+            return
+        try:
+            response = requests.get(
+                f"https://api.resend.com/emails/{message_id}",
+                headers=headers,
+                timeout=min(timeout, 10),
+                verify=self._webhook_verify_ssl,
+            )
+        except requests.RequestException as exc:
+            logger.warning("Resend delivery status lookup failed for %s: %s", message_id, exc)
+            return
+        if response.status_code != 200:
+            logger.warning(
+                "Resend delivery status lookup failed for %s: HTTP %s",
+                message_id,
+                response.status_code,
+            )
+            return
+        try:
+            payload = response.json()
+        except ValueError:
+            logger.warning("Resend delivery status lookup returned non-JSON for %s", message_id)
+            return
+        if not isinstance(payload, dict):
+            return
+        last_event = payload.get("last_event")
+        subject = payload.get("subject")
+        if isinstance(last_event, str) and last_event:
+            if isinstance(subject, str) and subject:
+                logger.info("Resend delivery status for %s: %s (subject=%s)", message_id, last_event, subject)
+            else:
+                logger.info("Resend delivery status for %s: %s", message_id, last_event)
 
     def test_custom_webhooks(self, content: str, *, timeout_seconds: float = 20.0) -> List[Dict[str, Any]]:
         """Send a test message to each custom webhook and return raw per-URL attempts."""

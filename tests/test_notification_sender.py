@@ -1533,9 +1533,14 @@ class TestCustomWebhookSender(unittest.TestCase):
             {"msg_type": "text", "content": 'hello "world"'},
         )
 
+    @mock.patch("src.notification_sender.custom_webhook_sender.requests.get")
     @mock.patch("src.notification_sender.custom_webhook_sender.requests.post")
-    def test_send_accepts_resend_created_status_and_logs_message_id(self, mock_post):
+    def test_send_accepts_resend_created_status_and_logs_message_id(self, mock_post, mock_get):
         mock_post.return_value = _response(202, {"id": "email_123"})
+        mock_get.return_value = _response(
+            200,
+            {"id": "email_123", "last_event": "delivered", "subject": "Post-Close"},
+        )
         cfg = _config(
             custom_webhook_urls=["https://api.resend.com/emails"],
             custom_webhook_body_template='{"subject":$title_json,"text":$content_json}',
@@ -1549,6 +1554,10 @@ class TestCustomWebhookSender(unittest.TestCase):
         self.assertTrue(
             any("Custom Webhook accepted message id: email_123" in line for line in logs.output)
         )
+        self.assertTrue(
+            any("Resend delivery status for email_123: delivered" in line for line in logs.output)
+        )
+        mock_get.assert_called_once()
 
     @mock.patch("src.notification_sender.custom_webhook_sender.requests.post")
     def test_dingtalk_send_uses_custom_body_template(self, mock_post):

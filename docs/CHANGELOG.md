@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 - [改进] GitHub Actions daily analysis now schedules separate weekday premarket and post-close runs, with phase-specific custom webhook titles for email providers such as Resend.
-- [修复] Custom Webhook delivery now treats HTTP 201/202 responses as successful accepted sends and logs accepted message ids when providers return one, improving Resend delivery diagnostics.
+- [修复] Custom Webhook delivery now treats HTTP 201/202 responses as successful accepted sends and logs accepted message ids plus Resend `last_event` delivery status when available.
 
 - [æ”¹è¿›] CLI and manual GitHub Actions runs can explicitly select `auto`, `premarket`, `intraday`, or `postmarket` analysis scope while scheduled runs retain automatic phase inference.
 
