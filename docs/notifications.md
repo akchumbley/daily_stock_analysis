@@ -87,6 +87,7 @@ Discord 长报告发送复用现有分片链路：单条 `content` 运行时不�
 | `CUSTOM_WEBHOOK_URLS` | minimal | custom | Secret | - |
 | `CUSTOM_WEBHOOK_BEARER_TOKEN` | advanced | custom | Secret | - |
 | `CUSTOM_WEBHOOK_BODY_TEMPLATE` | advanced | custom | Variable or Secret | - |
+| `CUSTOM_WEBHOOK_TITLE` | advanced | custom | Variable | - |
 | `WEBHOOK_VERIFY_SSL` | advanced | ntfy, gotify, custom, astrbot | Variable or Secret | `true` |
 | `DISCORD_WEBHOOK_URL` | minimal | discord | Secret | - |
 | `DISCORD_BOT_TOKEN` | minimal | discord | Secret | - |
@@ -159,6 +160,8 @@ Web 设置页的“通知渠道”分类提供单渠道测试入口。测试会�
 - `$content_html_json`：JSON 转义后的完整 HTML 报告，供 Resend 等支持 HTML 的邮件 API 使用；包含卡片布局、表格和风险提示样式。
 - `$title_json`：JSON 转义后的通知标题，推荐默认使用。
 - `$content_html` / `$content` / `$title`：原始字符串，不做 JSON 转义。正文含双引号、反斜杠或换行时可能导致 JSON 无效并触发 fallback。
+
+GitHub Actions can override the rendered title for a run by exporting `CUSTOM_WEBHOOK_TITLE`; this is used by the default daily workflow to label the premarket and post-close Resend emails separately.
 
 Docker Compose 部署中，Web 设置页保存该模板到 `.env` 时会自动把应用占位符写成 `$$content_json`、`$$title_json`、`$$content`、`$$title`，避免 Compose 将其当作宿主环境变量展开为空；应用运行时会还原为单个 `$` 占位符。若手工编辑 Docker 使用的 `.env`，也请按 `$$content_json` 形式保存。
 

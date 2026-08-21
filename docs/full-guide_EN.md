@@ -895,7 +895,7 @@ Entrypoints and visibility:
 | --- | --- |
 | `POST /api/v1/analysis/analyze` | Supports `analysis_phase=auto|premarket|intraday|postmarket`; omitted values default to `auto`. |
 | Web main analysis / re-analysis / portfolio manual analysis | There is currently no phase override selector. The frontend defaults to `auto`, the in-progress task panel shows the requested phase, and the final report page shows the final phase label. |
-| Bot / schedule / default GitHub Actions | Continue to use `auto` inference, and the default post-market behavior is unchanged. |
+| Bot / schedule / default GitHub Actions | Bot and local schedule continue to use `auto` inference. The default GitHub Actions workflow runs weekday premarket (`premarket`) and post-close (`postmarket`) analyses on separate UTC cron triggers. |
 | CLI / manual GitHub Actions | Optionally select `auto`, `premarket`, `intraday`, or `postmarket` with `--analysis-phase` or the workflow-dispatch input. |
 | History / backtest / notifications / alerts | Only consume public `market_phase_summary` and low-sensitivity `analysis_context_pack_overview`; they do not expose the full pack, prompt summary, news body text, or sensitive portfolio details. |
 

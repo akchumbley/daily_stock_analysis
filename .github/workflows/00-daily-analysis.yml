@@ -1,8 +1,11 @@
 name: 每日股票分析
 
 on:
-  # Weekdays after the U.S. market close: 21:30 UTC (17:30 EDT / 16:30 EST)
+  # Weekday U.S. market notes. GitHub cron is UTC-based.
   schedule:
+    # Premarket: 08:15 EDT / 07:15 EST
+    - cron: '15 12 * * 1-5'
+    # Post-close: 17:30 EDT / 16:30 EST
     - cron: '30 21 * * 1-5'
   
   # 手动触发
@@ -541,9 +544,34 @@ jobs:
           fi
 
           # 执行分析
-          ANALYSIS_PHASE="${{ github.event.inputs.analysis_phase || 'auto' }}"
+          SCHEDULE_CRON="${{ github.event.schedule }}"
+          if [ "$SCHEDULE_CRON" = "15 12 * * 1-5" ]; then
+            ANALYSIS_PHASE="premarket"
+            CUSTOM_WEBHOOK_TITLE="Daily Stock Analysis - Premarket"
+          elif [ "$SCHEDULE_CRON" = "30 21 * * 1-5" ]; then
+            ANALYSIS_PHASE="postmarket"
+            CUSTOM_WEBHOOK_TITLE="Daily Stock Analysis - Post-Close"
+          else
+            ANALYSIS_PHASE="${{ github.event.inputs.analysis_phase || 'auto' }}"
+            case "$ANALYSIS_PHASE" in
+              premarket)
+                CUSTOM_WEBHOOK_TITLE="Daily Stock Analysis - Premarket"
+                ;;
+              postmarket)
+                CUSTOM_WEBHOOK_TITLE="Daily Stock Analysis - Post-Close"
+                ;;
+              intraday)
+                CUSTOM_WEBHOOK_TITLE="Daily Stock Analysis - Intraday"
+                ;;
+              *)
+                CUSTOM_WEBHOOK_TITLE="Daily Stock Analysis"
+                ;;
+            esac
+          fi
+          export CUSTOM_WEBHOOK_TITLE
           ANALYSIS_PHASE_ARG="--analysis-phase $ANALYSIS_PHASE"
           echo "Market phase: $ANALYSIS_PHASE"
+          echo "Notification title: $CUSTOM_WEBHOOK_TITLE"
 
           if [ "$MODE" = "news-check" ]; then
             python scripts/check_news.py --stocks "$STOCK_LIST"

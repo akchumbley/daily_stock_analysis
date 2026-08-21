@@ -1480,6 +1480,23 @@ class TestCustomWebhookSender(unittest.TestCase):
 
         self.assertEqual(payload["title"], "Stock Analysis Report")
 
+    def test_custom_body_template_allows_env_title_override(self):
+        cfg = _config(
+            report_language="en",
+            custom_webhook_body_template=(
+                '{"title":$title_json,"content":$content_json}'
+            ),
+        )
+        with mock.patch.dict(os.environ, {"CUSTOM_WEBHOOK_TITLE": "Premarket Brief"}):
+            sender = CustomWebhookSender(cfg)
+
+        payload = sender._build_custom_webhook_payload(
+            "https://example.com/webhook",
+            "report body",
+        )
+
+        self.assertEqual(payload["title"], "Premarket Brief")
+
     def test_custom_body_template_can_include_styled_html_and_text_fallback(self):
         cfg = _config(
             report_language="en",
@@ -1514,6 +1531,23 @@ class TestCustomWebhookSender(unittest.TestCase):
         self.assertEqual(
             json.loads(body),
             {"msg_type": "text", "content": 'hello "world"'},
+        )
+
+    @mock.patch("src.notification_sender.custom_webhook_sender.requests.post")
+    def test_send_accepts_resend_created_status_and_logs_message_id(self, mock_post):
+        mock_post.return_value = _response(202, {"id": "email_123"})
+        cfg = _config(
+            custom_webhook_urls=["https://api.resend.com/emails"],
+            custom_webhook_body_template='{"subject":$title_json,"text":$content_json}',
+        )
+        sender = CustomWebhookSender(cfg)
+
+        with self.assertLogs("src.notification_sender.custom_webhook_sender", level="INFO") as logs:
+            result = sender.send_to_custom("hello")
+
+        self.assertTrue(result)
+        self.assertTrue(
+            any("Custom Webhook accepted message id: email_123" in line for line in logs.output)
         )
 
     @mock.patch("src.notification_sender.custom_webhook_sender.requests.post")

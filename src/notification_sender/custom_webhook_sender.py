@@ -7,6 +7,7 @@
 """
 import logging
 import json
+import os
 import time
 from string import Template
 from typing import Any, Dict, List, Optional, Tuple
@@ -38,12 +39,15 @@ class CustomWebhookSender:
         self._custom_webhook_urls = getattr(config, 'custom_webhook_urls', []) or []
         self._custom_webhook_bearer_token = getattr(config, 'custom_webhook_bearer_token', None)
         self._custom_webhook_body_template = getattr(config, 'custom_webhook_body_template', None)
+        self._custom_webhook_title = os.getenv("CUSTOM_WEBHOOK_TITLE", "").strip()
         self._webhook_verify_ssl = getattr(config, 'webhook_verify_ssl', True)
         self._report_language = normalize_report_language(
             getattr(config, 'report_language', 'zh')
         )
 
     def _get_report_title(self) -> str:
+        if self._custom_webhook_title:
+            return self._custom_webhook_title
         return get_report_labels(self._report_language)["report_title"]
  
     def send_to_custom(self, content: str) -> bool:
@@ -168,11 +172,24 @@ class CustomWebhookSender:
             headers['Authorization'] = f'Bearer {self._custom_webhook_bearer_token}'
         body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
         response = requests.post(url, data=body, headers=headers, timeout=timeout, verify=self._webhook_verify_ssl)
-        if response.status_code == 200:
+        if response.status_code in (200, 201, 202):
+            self._log_custom_webhook_success(response)
             return True
         logger.error(f"自定义 Webhook 推送失败: HTTP {response.status_code}")
         logger.debug(f"响应内容: {response.text[:200]}")
         return False
+
+    @staticmethod
+    def _log_custom_webhook_success(response: requests.Response) -> None:
+        try:
+            payload = response.json()
+        except ValueError:
+            return
+        if not isinstance(payload, dict):
+            return
+        message_id = payload.get("id")
+        if isinstance(message_id, str) and message_id:
+            logger.info("Custom Webhook accepted message id: %s", message_id)
 
     def test_custom_webhooks(self, content: str, *, timeout_seconds: float = 20.0) -> List[Dict[str, Any]]:
         """Send a test message to each custom webhook and return raw per-URL attempts."""
