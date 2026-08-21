@@ -154,6 +154,7 @@ Go to your forked repo → `Settings` → `Secrets and variables` → `Actions` 
 | `SERPAPI_API_KEYS` | [SerpAPI](https://serpapi.com/baidu-search-api?utm_source=github_daily_stock_analysis) search-engine results for realtime financial news | Recommended |
 | `TAVILY_API_KEYS` | [Tavily](https://tavily.com/) Search API (for news search) | Optional |
 | `YFINANCE_NEWS_ENABLED` | Credential-free Yahoo Finance headline fallback, used after configured search providers | Default `true` |
+| `OPTIONS_NEWS_ENABLED` | Adds an options-focused news dimension for US symbols: volatility catalysts, unusual activity, event timing, leverage, skew, and decay risks | Default `true` |
 | `BOCHA_API_KEYS` | [Bocha Search](https://open.bocha.cn/) Web Search API (Chinese search optimized, supports AI summaries, multiple keys comma-separated) | Optional |
 | `BRAVE_API_KEYS` | [Brave Search](https://brave.com/search/api/) API (privacy-first, US-stock news enrichment, comma-separated for multiple keys) | Optional |
 | `MINIMAX_API_KEYS` | [MiniMax](https://platform.minimax.io/) Coding Plan Web Search (structured search results) | Optional |

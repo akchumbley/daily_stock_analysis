@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [新功能] Added a UI-configurable, default-on options-news lens for US symbols covering volatility catalysts, unusual activity, event timing, leverage, skew, and decay risk.
+
 - [修复] Yahoo Finance fallback now uses compact ticker/company-alias queries and rejects generic zero-relevance headlines, preventing unrelated news from contaminating AI sentiment.
 
 <!-- 新条目格式：- [类型] 描述（类型取值：新功能/改进/修复/文档/测试/chore）-->

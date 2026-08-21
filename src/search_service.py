@@ -472,7 +472,8 @@ class YFinanceNewsProvider(BaseSearchProvider):
                 for existing in queries
             ):
                 queries.append(normalized)
-        queries = queries[:4]
+        if len(queries) > 4:
+            queries = [*queries[:3], queries[-1]]
 
         raw_batches: List[List[Dict[str, Any]]] = []
         errors: List[str] = []
@@ -2601,6 +2602,7 @@ class SearchService:
         searxng_base_urls: Optional[List[str]] = None,
         searxng_public_instances_enabled: bool = False,
         yfinance_news_enabled: bool = False,
+        options_news_enabled: bool = True,
         news_max_age_days: int = 3,
         news_strategy_profile: str = "short",
     ):
@@ -2630,10 +2632,12 @@ class SearchService:
             "searxng_base_urls": list(searxng_base_urls or []),
             "searxng_public_instances_enabled": bool(searxng_public_instances_enabled),
             "yfinance_news_enabled": bool(yfinance_news_enabled),
+            "options_news_enabled": bool(options_news_enabled),
             "news_max_age_days": int(news_max_age_days),
             "news_strategy_profile": news_strategy_profile,
         }
         self._providers: List[BaseSearchProvider] = []
+        self.options_news_enabled = bool(options_news_enabled)
         self.news_max_age_days = max(1, news_max_age_days)
         raw_profile = (news_strategy_profile or "short").strip().lower()
         self.news_strategy_profile = normalize_news_strategy_profile(news_strategy_profile)
@@ -4671,6 +4675,23 @@ class SearchService:
                     'tavily_topic': 'news',
                     'strict_freshness': True,
                 },
+                *(
+                    [
+                        {
+                            'name': 'options_flow',
+                            'query': (
+                                f"{effective_name} {stock_code} options implied volatility "
+                                f"unusual options activity earnings catalyst put call skew "
+                                f"{'leverage decay' if is_index_etf else 'expiration'}"
+                            ),
+                            'desc': 'Options / volatility catalysts',
+                            'tavily_topic': 'news',
+                            'strict_freshness': True,
+                        }
+                    ]
+                    if self.options_news_enabled and self._is_us_stock(stock_code)
+                    else []
+                ),
                 {
                     'name': 'market_analysis',
                     'query': f"{effective_name} analyst rating target price report",
@@ -4820,6 +4841,21 @@ class SearchService:
                     days=request_days,
                     topic=dim['tavily_topic'],
                 )
+            elif isinstance(provider, YFinanceNewsProvider):
+                response = provider.search(
+                    dim['query'],
+                    max_results=provider_max_results,
+                    days=request_days,
+                    stock_code=stock_code,
+                    identity_terms=(
+                        foreign_stock_identity_aliases(stock_code)
+                        or (stock_name,)
+                    ),
+                    ticker_feed_enabled=is_index_etf,
+                    ticker_feed_symbol=self._ETF_NEWS_FEED_PROXY.get(
+                        canonicalize_foreign_stock_code(stock_code)
+                    ),
+                )
             else:
                 response = provider.search(
                     dim['query'],
@@ -4858,6 +4894,19 @@ class SearchService:
                 filtered_response,
                 log_scope=f"{stock_code}:{provider.name}:{dim['name']}:admission",
             )
+            if isinstance(provider, YFinanceNewsProvider):
+                filtered_response = SearchResponse(
+                    query=filtered_response.query,
+                    results=[
+                        item
+                        for item in filtered_response.results
+                        if (item.relevance_score or 0) > 0
+                    ],
+                    provider=filtered_response.provider,
+                    success=filtered_response.success,
+                    error_message=filtered_response.error_message,
+                    search_time=filtered_response.search_time,
+                )
             filtered_response = self._limit_search_response(
                 filtered_response,
                 max_results=target_per_dimension,
@@ -4894,9 +4943,10 @@ class SearchService:
         lines = [f"【{stock_name} 情报搜索结果】"]
         
         # 维度展示顺序
-        display_order = ['latest_news', 'announcements', 'market_analysis', 'risk_check', 'earnings', 'industry']
+        display_order = ['latest_news', 'options_flow', 'announcements', 'market_analysis', 'risk_check', 'earnings', 'industry']
 
         dim_labels = {
+            'options_flow': 'Options / volatility catalysts',
             'latest_news': '📰 最新消息',
             'announcements': '📋 公司公告',
             'market_analysis': '📈 机构分析',

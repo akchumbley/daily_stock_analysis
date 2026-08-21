@@ -981,6 +981,7 @@ class Config:
     searxng_base_urls: List[str] = field(default_factory=list)  # SearXNG instance URLs (self-hosted, no quota)
     searxng_public_instances_enabled: bool = False  # Opt in to public discovery when base URLs are absent
     yfinance_news_enabled: bool = True  # Credential-free Yahoo Finance news fallback
+    options_news_enabled: bool = True  # Add options/volatility catalyst news for US symbols
 
     # === Social Sentiment (US stocks only, api.adanos.org) ===
     social_sentiment_api_key: Optional[str] = None
@@ -1877,6 +1878,10 @@ class Config:
             searxng_public_instances_enabled=searxng_public_instances_enabled,
             yfinance_news_enabled=parse_env_bool(
                 os.getenv('YFINANCE_NEWS_ENABLED'),
+                default=True,
+            ),
+            options_news_enabled=parse_env_bool(
+                os.getenv('OPTIONS_NEWS_ENABLED'),
                 default=True,
             ),
             social_sentiment_api_key=os.getenv('SOCIAL_SENTIMENT_API_KEY') or None,

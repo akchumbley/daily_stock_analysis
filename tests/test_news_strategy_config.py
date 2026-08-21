@@ -14,6 +14,12 @@ class NewsStrategyConfigTestCase(unittest.TestCase):
         with patch.dict("os.environ", {"YFINANCE_NEWS_ENABLED": "false"}, clear=True):
             self.assertFalse(Config._load_from_env().yfinance_news_enabled)
 
+    def test_options_news_defaults_on_and_is_configurable(self) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertTrue(Config._load_from_env().options_news_enabled)
+        with patch.dict("os.environ", {"OPTIONS_NEWS_ENABLED": "false"}, clear=True):
+            self.assertFalse(Config._load_from_env().options_news_enabled)
+
     def test_invalid_profile_fallback_to_short(self) -> None:
         self.assertEqual(Config._parse_news_strategy_profile("bad_value"), "short")
 

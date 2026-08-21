@@ -166,6 +166,62 @@ def test_tqqq_uses_qqq_underlying_news_feed() -> None:
     assert response.results[0].provider_symbol == "TQQQ"
 
 
+def test_yfinance_identity_queries_feed_comprehensive_intelligence() -> None:
+    service = SearchService(yfinance_news_enabled=True, news_max_age_days=3)
+
+    def fake_search(query: str, news_count: int) -> SimpleNamespace:
+        if query == "APLD":
+            return SimpleNamespace(
+                news=[_news_item(title="APLD wins new AI infrastructure contract")]
+            )
+        return SimpleNamespace(news=[])
+
+    with patch("yfinance.Search", side_effect=fake_search):
+        results = service.search_comprehensive_intel(
+            stock_code="APLD",
+            stock_name="Applied Digital Corporation",
+            max_searches=1,
+        )
+
+    assert results["latest_news"].results
+    assert results["latest_news"].results[0].title.startswith("APLD wins")
+
+
+def test_options_news_dimension_is_enabled_for_us_symbols() -> None:
+    service = SearchService(
+        yfinance_news_enabled=True,
+        options_news_enabled=True,
+        news_max_age_days=3,
+    )
+
+    with patch("yfinance.Search", return_value=SimpleNamespace(news=[])) as search:
+        results = service.search_comprehensive_intel(
+            stock_code="MSTR",
+            stock_name="MicroStrategy",
+            max_searches=2,
+        )
+
+    assert "options_flow" in results
+    assert any("implied volatility" in call.args[0] for call in search.call_args_list)
+
+
+def test_options_news_dimension_can_be_disabled() -> None:
+    service = SearchService(
+        yfinance_news_enabled=True,
+        options_news_enabled=False,
+        news_max_age_days=3,
+    )
+
+    with patch("yfinance.Search", return_value=SimpleNamespace(news=[])):
+        results = service.search_comprehensive_intel(
+            stock_code="MSTR",
+            stock_name="MicroStrategy",
+            max_searches=2,
+        )
+
+    assert "options_flow" not in results
+
+
 def test_yfinance_fallback_can_be_disabled() -> None:
     service = SearchService(yfinance_news_enabled=False)
 

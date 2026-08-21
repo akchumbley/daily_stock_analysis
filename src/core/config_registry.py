@@ -1192,6 +1192,32 @@ _FIELD_DEFINITIONS: Dict[str, Dict[str, Any]] = {
         ],
         "warning_codes": [],
     },
+    "OPTIONS_NEWS_ENABLED": {
+        "title": "Options-focused News",
+        "description": "Add an options-trading news lens for US symbols, including volatility catalysts, unusual options activity, earnings/event timing, leverage, and decay risks.",
+        "category": "data_source",
+        "data_type": "boolean",
+        "ui_control": "switch",
+        "is_sensitive": False,
+        "is_required": False,
+        "is_editable": True,
+        "default_value": "true",
+        "options": [],
+        "validation": {},
+        "display_order": 59,
+        "help_key": "settings.data_source.news_window",
+        "examples": [
+            "OPTIONS_NEWS_ENABLED=true",
+            "OPTIONS_NEWS_ENABLED=false",
+        ],
+        "docs": [
+            {
+                "label": "Full guide: data-source configuration",
+                "href": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/docs/full-guide_EN.md#data-source-configuration",
+            },
+        ],
+        "warning_codes": [],
+    },
     "NEWS_MAX_AGE_DAYS": {
         "title": "News Max Age (Days)",
         "description": "Maximum age of news in days. Older articles are excluded from analysis context.",
