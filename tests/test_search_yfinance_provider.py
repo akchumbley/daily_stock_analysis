@@ -62,6 +62,49 @@ def test_search_service_uses_yfinance_without_api_keys() -> None:
     assert response.results[0].relevance_category == "direct_company_news"
 
 
+def test_yfinance_uses_compact_security_identity_queries() -> None:
+    calls = []
+
+    def fake_search(query: str, news_count: int) -> SimpleNamespace:
+        calls.append((query, news_count))
+        if query == "MSTR":
+            return SimpleNamespace(
+                news=[_news_item(title="MSTR announces treasury update")]
+            )
+        return SimpleNamespace(news=[])
+
+    service = SearchService(yfinance_news_enabled=True, news_max_age_days=3)
+    with patch("yfinance.Search", side_effect=fake_search):
+        response = service.search_stock_news(
+            stock_code="MSTR",
+            stock_name="MicroStrategy",
+            max_results=3,
+        )
+
+    assert calls[0][0] == "MSTR"
+    assert "Strategy Inc." in [query for query, _count in calls]
+    assert response.results[0].title == "MSTR announces treasury update"
+
+
+def test_yfinance_rejects_generic_zero_relevance_feed() -> None:
+    generic = _news_item(title="Unrelated company reports quarterly earnings")
+    service = SearchService(yfinance_news_enabled=True, news_max_age_days=3)
+
+    with patch(
+        "yfinance.Search",
+        return_value=SimpleNamespace(news=[generic]),
+    ):
+        response = service.search_stock_news(
+            stock_code="SPCX",
+            stock_name="Space Exploration Technologies Corporation",
+            max_results=3,
+        )
+
+    assert response.success is True
+    assert response.provider == "Filtered"
+    assert response.results == []
+
+
 def test_yfinance_fallback_can_be_disabled() -> None:
     service = SearchService(yfinance_news_enabled=False)
 

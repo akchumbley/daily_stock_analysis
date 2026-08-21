@@ -20,7 +20,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Sequence, Tuple
 from itertools import cycle
 from urllib.parse import parse_qsl, unquote, urlparse
 import requests
@@ -42,6 +42,7 @@ from src.config import (
 from src.data.stock_mapping import (
     canonicalize_foreign_stock_code,
     foreign_stock_english_aliases,
+    foreign_stock_identity_aliases,
 )
 from src.services.run_diagnostics import record_provider_run, record_provider_run_started
 
@@ -442,6 +443,8 @@ class YFinanceNewsProvider(BaseSearchProvider):
         api_key: str,
         max_results: int,
         days: int = 7,
+        stock_code: Optional[str] = None,
+        identity_terms: Optional[Sequence[str]] = None,
     ) -> SearchResponse:
         del api_key, days
         try:
@@ -455,19 +458,74 @@ class YFinanceNewsProvider(BaseSearchProvider):
                 error_message="yfinance is not installed",
             )
 
-        try:
-            raw_items = getattr(yf.Search(query, news_count=max_results), "news", None) or []
-        except Exception as exc:
+        # Yahoo can return its generic front-page feed when a long natural-
+        # language query has no exact match. Compact ticker/name queries keep
+        # the candidates security-specific for downstream relevance scoring.
+        queries: List[str] = []
+        for value in [stock_code, *(identity_terms or ()), query]:
+            normalized = str(value or "").strip()
+            if normalized and all(
+                normalized.casefold() != existing.casefold()
+                for existing in queries
+            ):
+                queries.append(normalized)
+        queries = queries[:4]
+
+        raw_batches: List[List[Dict[str, Any]]] = []
+        errors: List[str] = []
+        for compact_query in queries:
+            try:
+                found = getattr(
+                    yf.Search(compact_query, news_count=max_results),
+                    "news",
+                    None,
+                ) or []
+            except Exception as exc:
+                errors.append(f"{compact_query}: {exc}")
+                continue
+            raw_batches.append(
+                [raw_item for raw_item in found if isinstance(raw_item, dict)]
+            )
+
+        # Interleave batches so a generic ticker response cannot crowd a later
+        # legal/common-name match out of the freshness window before ranking.
+        raw_items: List[Dict[str, Any]] = []
+        seen_items: set = set()
+        max_batch_size = max((len(batch) for batch in raw_batches), default=0)
+        for index in range(max_batch_size):
+            for batch in raw_batches:
+                if index >= len(batch):
+                    continue
+                raw_item = batch[index]
+                if not isinstance(raw_item, dict):
+                    continue
+                content = raw_item.get("content")
+                item = content if isinstance(content, dict) else raw_item
+                dedupe_key = (
+                    str(item.get("title") or raw_item.get("title") or "")
+                    .strip()
+                    .casefold(),
+                    self._url_from_value(item.get("canonicalUrl"))
+                    or self._url_from_value(item.get("clickThroughUrl"))
+                    or self._url_from_value(item.get("link"))
+                    or self._url_from_value(raw_item.get("link")),
+                )
+                if not dedupe_key[0] or dedupe_key in seen_items:
+                    continue
+                seen_items.add(dedupe_key)
+                raw_items.append(raw_item)
+
+        if not raw_items and errors:
             return SearchResponse(
                 query=query,
                 results=[],
                 provider=self.name,
                 success=False,
-                error_message=str(exc),
+                error_message="; ".join(errors),
             )
 
         results: List[SearchResult] = []
-        for raw_item in raw_items[:max_results]:
+        for raw_item in raw_items:
             if not isinstance(raw_item, dict):
                 continue
             content = raw_item.get("content")
@@ -514,6 +572,23 @@ class YFinanceNewsProvider(BaseSearchProvider):
             results=results,
             provider=self.name,
             success=True,
+        )
+
+    def search(
+        self,
+        query: str,
+        max_results: int = 5,
+        days: int = 7,
+        *,
+        stock_code: Optional[str] = None,
+        identity_terms: Optional[Sequence[str]] = None,
+    ) -> SearchResponse:
+        return self._execute_search(
+            query,
+            max_results=max_results,
+            days=days,
+            stock_code=stock_code,
+            identity_terms=identity_terms,
         )
 
 
@@ -3359,7 +3434,7 @@ class SearchService:
         # be a subset of its foreign-ticker keys) and feed both the alias
         # strings and their legal-suffix-stripped variants into the same
         # identity-term scoring path.
-        english_aliases = foreign_stock_english_aliases(stock_code, stock_name)
+        english_aliases = foreign_stock_identity_aliases(stock_code)
         if english_aliases:
             # Issue #2026 / PR #2049 review: dedupe identity terms across all
             # aliases BEFORE scoring. STOCK_ENGLISH_NAME_MAP legal alias
@@ -3372,7 +3447,9 @@ class SearchService:
             # a single snippet hit on ``Apple`` (16+16=32) and push ambiguous
             # snippet-only headlines over the direct_company_news threshold.
             # Collect terms into a set first; score each unique term once.
-            seen_identity_terms: set = set()
+            # Do not score an alias term twice when the current display name
+            # already produced the same identity (for example Apple -> Apple).
+            seen_identity_terms: set = set(cls._company_identity_terms(stock_name))
             for alias in english_aliases:
                 for term in cls._company_identity_terms(alias):
                     if term in seen_identity_terms:
@@ -4230,6 +4307,14 @@ class SearchService:
                             prefer_chinese=prefer_chinese,
                         )
                     )
+                elif isinstance(provider, YFinanceNewsProvider):
+                    search_kwargs.update(
+                        stock_code=stock_code,
+                        identity_terms=(
+                            foreign_stock_identity_aliases(stock_code)
+                            or (stock_name,)
+                        ),
+                    )
 
                 started_at = time.monotonic()
                 try:
@@ -4274,6 +4359,22 @@ class SearchService:
                         ranked_response,
                         log_scope=f"{stock_code}:{provider.name}:stock_news",
                     )
+                    if isinstance(provider, YFinanceNewsProvider):
+                        # Yahoo may return generic front-page items for a query
+                        # with no match. Fail closed instead of presenting an
+                        # unrelated all-zero result set as usable stock news.
+                        admitted_response = SearchResponse(
+                            query=admitted_response.query,
+                            results=[
+                                item
+                                for item in admitted_response.results
+                                if (item.relevance_score or 0) > 0
+                            ],
+                            provider=admitted_response.provider,
+                            success=admitted_response.success,
+                            error_message=admitted_response.error_message,
+                            search_time=admitted_response.search_time,
+                        )
                     limited_response = self._limit_search_response(
                         admitted_response,
                         max_results=max_results,

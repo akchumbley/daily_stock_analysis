@@ -273,6 +273,19 @@ def foreign_stock_english_aliases(stock_code: str, stock_name: str) -> Tuple[str
     return tuple(aliases) if aliases else ()
 
 
+def foreign_stock_identity_aliases(stock_code: str) -> Tuple[str, ...]:
+    """Return every configured English identity alias for a foreign ticker.
+
+    Unlike ``foreign_stock_english_aliases``, this is intended for relevance
+    validation and provider lookup even when the pipeline display name is
+    already English. Media names such as ``SpaceX`` can differ materially from
+    a legal display name such as ``Space Exploration Technologies Corporation``.
+    """
+    canonical = canonicalize_foreign_stock_code(stock_code)
+    aliases = STOCK_ENGLISH_NAME_MAP.get(canonical)
+    return tuple(aliases) if aliases else ()
+
+
 _CONTAINS_CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 
 

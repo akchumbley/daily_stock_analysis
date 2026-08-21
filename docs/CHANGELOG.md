@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [修复] Yahoo Finance fallback now uses compact ticker/company-alias queries and rejects generic zero-relevance headlines, preventing unrelated news from contaminating AI sentiment.
+
 <!-- 新条目格式：- [类型] 描述（类型取值：新功能/改进/修复/文档/测试/chore）-->
 <!-- 每条独立一行追加到本段末尾，无需分类标题，合并时冲突最小 -->
 - [修复] 美股分析在未配置付费搜索 Key 时默认启用 Yahoo Finance 无密钥新闻兜底，并将开关接入 Web UI 与 GitHub Actions，避免 AI 因搜索服务整体不可用而缺少新闻和头条情绪输入。
