@@ -986,6 +986,8 @@ class HistoryService:
             # 业绩预期
             if intel.get('earnings_outlook'):
                 report_lines.append(f"**📊 {labels['earnings_outlook_label']}**: {intel['earnings_outlook']}")
+            if intel.get('options_outlook'):
+                report_lines.append(f"**🎯 {labels['options_outlook_label']}**: {intel['options_outlook']}")
             # 风险警报（醒目显示）
             risk_alerts = intel.get('risk_alerts', [])
             if risk_alerts:

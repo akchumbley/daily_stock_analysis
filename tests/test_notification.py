@@ -1318,6 +1318,38 @@ class TestNotificationServiceReportGeneration(unittest.TestCase):
         self.assertNotIn("消息面", out)
 
     @mock.patch("src.notification.get_config")
+    def test_generate_dashboard_report_renders_options_lens(
+        self, mock_get_config: mock.MagicMock
+    ):
+        mock_get_config.return_value = _make_config(
+            report_renderer_enabled=False,
+            report_language="en",
+        )
+        service = NotificationService()
+        result = AnalysisResult(
+            code="MSTR",
+            name="Strategy",
+            sentiment_score=58,
+            trend_prediction="Bullish",
+            operation_advice="Watch",
+            analysis_summary="Wait for confirmation.",
+            report_language="en",
+            dashboard={
+                "intelligence": {
+                    "options_outlook": (
+                        "Event risk can expand implied volatility; no verified "
+                        "unusual flow or open-interest data was supplied."
+                    )
+                }
+            },
+        )
+
+        out = service.generate_dashboard_report([result], report_date="2026-08-21")
+
+        self.assertIn("Options Lens", out)
+        self.assertIn("no verified unusual flow", out)
+
+    @mock.patch("src.notification.get_config")
     def test_generate_single_stock_report_aligns_english_fallback_with_score(self, mock_get_config: mock.MagicMock):
         mock_get_config.return_value = _make_config(report_renderer_enabled=False, report_language="en")
         service = NotificationService()

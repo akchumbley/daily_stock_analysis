@@ -86,6 +86,7 @@ class Intelligence(BaseModel):
     risk_alerts: Optional[List[str]] = None
     positive_catalysts: Optional[List[str]] = None
     earnings_outlook: Optional[str] = None
+    options_outlook: Optional[str] = None
     sentiment_summary: Optional[str] = None
 
 

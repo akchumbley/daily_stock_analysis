@@ -1952,6 +1952,7 @@ class GeminiAnalyzer:
             "risk_alerts": ["风险点1：具体描述", "风险点2：具体描述"],
             "positive_catalysts": ["利好1：具体描述", "利好2：具体描述"],
             "earnings_outlook": "业绩预期分析（基于年报预告、业绩快报等）",
+            "options_outlook": "期权视角：仅基于已提供的期权/波动率新闻总结催化、事件时点、杠杆与衰减风险；不得编造隐含波动率、成交量、未平仓量或异常流量",
             "sentiment_summary": "舆情情绪一句话总结"
         },
 
@@ -2140,6 +2141,7 @@ class GeminiAnalyzer:
             "risk_alerts": ["风险点1：具体描述", "风险点2：具体描述"],
             "positive_catalysts": ["利好1：具体描述", "利好2：具体描述"],
             "earnings_outlook": "业绩预期分析（基于年报预告、业绩快报等）",
+            "options_outlook": "期权视角：仅基于已提供的期权/波动率新闻总结催化、事件时点、杠杆与衰减风险；不得编造隐含波动率、成交量、未平仓量或异常流量",
             "sentiment_summary": "舆情情绪一句话总结"
         },
 

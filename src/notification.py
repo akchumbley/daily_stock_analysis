@@ -1335,6 +1335,8 @@ class NotificationService(
                     # 业绩预期
                     if intel.get('earnings_outlook'):
                         report_lines.append(f"**📊 {labels['earnings_outlook_label']}**: {intel['earnings_outlook']}")
+                    if intel.get('options_outlook'):
+                        report_lines.append(f"**🎯 {labels['options_outlook_label']}**: {intel['options_outlook']}")
                     # 风险警报（醒目显示）
                     risk_alerts = intel.get('risk_alerts', [])
                     if risk_alerts:
@@ -1664,6 +1666,9 @@ class NotificationService(
                 if intel.get('earnings_outlook'):
                     outlook = str(intel['earnings_outlook'])[:60]
                     info_lines.append(f"📊 {labels['earnings_outlook_label']}: {outlook}")
+                if intel.get('options_outlook'):
+                    options_outlook = str(intel['options_outlook'])[:80]
+                    info_lines.append(f"🎯 {labels['options_outlook_label']}: {options_outlook}")
                 if intel.get('sentiment_summary'):
                     sentiment = str(intel['sentiment_summary'])[:50]
                     info_lines.append(f"💭 {labels['sentiment_summary_label']}: {sentiment}")
@@ -1957,6 +1962,8 @@ class NotificationService(
                     lines.append("")
                     info_added = True
                 lines.append(f"📊 **{labels['earnings_outlook_label']}**: {str(intel['earnings_outlook'])[:100]}")
+            if intel.get('options_outlook'):
+                lines.append(f"🎯 **{labels['options_outlook_label']}**: {str(intel['options_outlook'])[:120]}")
 
             if intel.get('sentiment_summary'):
                 if not info_added:
