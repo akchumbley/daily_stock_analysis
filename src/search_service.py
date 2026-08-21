@@ -447,6 +447,7 @@ class YFinanceNewsProvider(BaseSearchProvider):
         stock_code: Optional[str] = None,
         identity_terms: Optional[Sequence[str]] = None,
         ticker_feed_enabled: bool = False,
+        ticker_feed_symbol: Optional[str] = None,
     ) -> SearchResponse:
         del api_key, days
         try:
@@ -476,8 +477,9 @@ class YFinanceNewsProvider(BaseSearchProvider):
         raw_batches: List[List[Dict[str, Any]]] = []
         errors: List[str] = []
         if ticker_feed_enabled and stock_code:
+            feed_symbol = ticker_feed_symbol or stock_code
             try:
-                ticker_news = yf.Ticker(stock_code).get_news(
+                ticker_news = yf.Ticker(feed_symbol).get_news(
                     count=max_results,
                     tab="news",
                 ) or []
@@ -489,7 +491,7 @@ class YFinanceNewsProvider(BaseSearchProvider):
                     ]
                 )
             except Exception as exc:
-                errors.append(f"{stock_code} ticker feed: {exc}")
+                errors.append(f"{feed_symbol} ticker feed: {exc}")
         for compact_query in queries:
             try:
                 found = getattr(
@@ -603,6 +605,7 @@ class YFinanceNewsProvider(BaseSearchProvider):
         stock_code: Optional[str] = None,
         identity_terms: Optional[Sequence[str]] = None,
         ticker_feed_enabled: bool = False,
+        ticker_feed_symbol: Optional[str] = None,
     ) -> SearchResponse:
         return self._execute_search(
             query,
@@ -611,6 +614,7 @@ class YFinanceNewsProvider(BaseSearchProvider):
             stock_code=stock_code,
             identity_terms=identity_terms,
             ticker_feed_enabled=ticker_feed_enabled,
+            ticker_feed_symbol=ticker_feed_symbol,
         )
 
 
@@ -2860,6 +2864,7 @@ class SearchService:
     _A_ETF_PREFIXES = ('51', '52', '56', '58', '15', '16', '18')
     _ETF_NAME_KEYWORDS = ('ETF', 'FUND', 'TRUST', 'INDEX', 'TRACKER', 'UNIT')  # US/HK ETF name hints
     _KNOWN_US_ETFS = {"SPY", "QQQ", "TQQQ"}
+    _ETF_NEWS_FEED_PROXY = {"TQQQ": "QQQ"}
 
     @staticmethod
     def is_index_or_etf(stock_code: str, stock_name: str) -> bool:
@@ -4366,6 +4371,9 @@ class SearchService:
                         ticker_feed_enabled=self.is_index_or_etf(
                             stock_code,
                             stock_name,
+                        ),
+                        ticker_feed_symbol=self._ETF_NEWS_FEED_PROXY.get(
+                            canonicalize_foreign_stock_code(stock_code)
                         ),
                     )
 

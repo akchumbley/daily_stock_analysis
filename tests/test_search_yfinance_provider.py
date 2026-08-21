@@ -147,6 +147,25 @@ def test_tqqq_is_recognized_as_etf_without_fund_keyword() -> None:
     assert SearchService.is_index_or_etf("TQQQ", "ProShares UltraPro QQQ")
 
 
+def test_tqqq_uses_qqq_underlying_news_feed() -> None:
+    market_item = _news_item(title="Technology shares lead the market higher")
+    service = SearchService(yfinance_news_enabled=True, news_max_age_days=3)
+
+    with patch("yfinance.Ticker") as ticker, patch(
+        "yfinance.Search", return_value=SimpleNamespace(news=[])
+    ):
+        ticker.return_value.get_news.return_value = [market_item]
+        response = service.search_stock_news(
+            stock_code="TQQQ",
+            stock_name="ProShares UltraPro QQQ",
+            max_results=3,
+        )
+
+    ticker.assert_called_once_with("QQQ")
+    assert response.provider == "YahooFinance"
+    assert response.results[0].provider_symbol == "TQQQ"
+
+
 def test_yfinance_fallback_can_be_disabled() -> None:
     service = SearchService(yfinance_news_enabled=False)
 
