@@ -2859,6 +2859,7 @@ class SearchService:
     # A-share ETF code prefixes (Shanghai 51/52/56/58, Shenzhen 15/16/18)
     _A_ETF_PREFIXES = ('51', '52', '56', '58', '15', '16', '18')
     _ETF_NAME_KEYWORDS = ('ETF', 'FUND', 'TRUST', 'INDEX', 'TRACKER', 'UNIT')  # US/HK ETF name hints
+    _KNOWN_US_ETFS = {"SPY", "QQQ", "TQQQ"}
 
     @staticmethod
     def is_index_or_etf(stock_code: str, stock_name: str) -> bool:
@@ -2869,6 +2870,8 @@ class SearchService:
         code = (stock_code or '').strip().split('.')[0]
         if not code:
             return False
+        if code.upper() in SearchService._KNOWN_US_ETFS:
+            return True
         # A-share ETF
         if code.isdigit() and len(code) == 6 and code.startswith(SearchService._A_ETF_PREFIXES):
             return True

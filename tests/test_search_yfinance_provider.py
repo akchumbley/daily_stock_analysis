@@ -143,6 +143,10 @@ def test_yfinance_uses_ticker_scoped_feed_for_etf_context() -> None:
     assert response.results[0].relevance_score > 0
 
 
+def test_tqqq_is_recognized_as_etf_without_fund_keyword() -> None:
+    assert SearchService.is_index_or_etf("TQQQ", "ProShares UltraPro QQQ")
+
+
 def test_yfinance_fallback_can_be_disabled() -> None:
     service = SearchService(yfinance_news_enabled=False)
 
